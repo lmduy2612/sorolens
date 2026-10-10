@@ -73,4 +73,50 @@ describe("apple-touch-icon (#220)", () => {
       expect(png.readUInt32BE(20)).toBe(Number(size.split("x")[1]));
     }
   });
+
+  it("provides valid screenshots in manifest and does not point to icon files (#615)", () => {
+    const manifests = [
+      JSON.parse(readFileSync(path.join(publicPath, "manifest.json"), "utf8")),
+      JSON.parse(
+        readFileSync(path.join(publicPath, "manifest.webmanifest"), "utf8")
+      ),
+    ];
+
+    for (const manifest of manifests) {
+      expect(manifest.screenshots).toBeDefined();
+      expect(manifest.screenshots.length).toBeGreaterThanOrEqual(2);
+
+      const narrow = manifest.screenshots.find(
+        (s: { form_factor?: string }) => s.form_factor === "narrow"
+      );
+      const wide = manifest.screenshots.find(
+        (s: { form_factor?: string }) => s.form_factor === "wide"
+      );
+
+      expect(narrow).toBeDefined();
+      expect(wide).toBeDefined();
+
+      for (const screenshot of manifest.screenshots) {
+        // Must not point at icon files
+        expect(screenshot.src).not.toMatch(/\/icons?\//);
+        expect(screenshot.type).toBe("image/png");
+
+        const imagePath = path.join(
+          publicPath,
+          screenshot.src.replace(/^\//, "")
+        );
+        expect(existsSync(imagePath)).toBe(true);
+
+        const png = readFileSync(imagePath);
+        // PNG magic bytes
+        expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+
+        const [expectedWidth, expectedHeight] = screenshot.sizes
+          .split("x")
+          .map(Number);
+        expect(png.readUInt32BE(16)).toBe(expectedWidth);
+        expect(png.readUInt32BE(20)).toBe(expectedHeight);
+      }
+    }
+  });
 });

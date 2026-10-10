@@ -26,5 +26,21 @@
       "sizes": "180x180",
       "type": "image/png"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard-narrow.png",
+      "sizes": "800x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Sorolens dashboard"
+    },
+    {
+      "src": "/screenshots/dashboard-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Sorolens dashboard — wide"
+    }
   ]
 }

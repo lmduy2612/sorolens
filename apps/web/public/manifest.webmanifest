@@ -43,15 +43,15 @@
   "categories": ["developer", "utilities"],
   "screenshots": [
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "/screenshots/dashboard-narrow.png",
+      "sizes": "800x1280",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Sorolens dashboard"
     },
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "/screenshots/dashboard-wide.png",
+      "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Sorolens dashboard — wide"

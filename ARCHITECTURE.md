@@ -952,16 +952,16 @@ than query data. A rule is a string in the Sorolens rule language; the API
 validates it before storing it, and the indexer evaluates enabled rules at the
 end of every pass.
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/v1/rules` | List stored rules. |
-| `POST` | `/api/v1/rules` | Create a rule (validated; `422` with a positioned diagnostic on failure). |
-| `PATCH` | `/api/v1/rules/{id}` | Enable or pause a rule. |
-| `DELETE` | `/api/v1/rules/{id}` | Delete a rule. |
-| `POST` | `/api/v1/rules/validate` | Validate rule text without writing. |
-| `POST` | `/api/v1/rules/preview` | Evaluate against the contract's recent metric samples. |
-| `GET` | `/api/v1/rules/metrics` | The closed metric catalog. |
-| `GET` | `/api/v1/rules/library` | Curated starter rules. |
+| Method   | Path                     | Purpose                                                                   |
+| -------- | ------------------------ | ------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/rules`          | List stored rules.                                                        |
+| `POST`   | `/api/v1/rules`          | Create a rule (validated; `422` with a positioned diagnostic on failure). |
+| `PATCH`  | `/api/v1/rules/{id}`     | Enable or pause a rule.                                                   |
+| `DELETE` | `/api/v1/rules/{id}`     | Delete a rule.                                                            |
+| `POST`   | `/api/v1/rules/validate` | Validate rule text without writing.                                       |
+| `POST`   | `/api/v1/rules/preview`  | Evaluate against the contract's recent metric samples.                    |
+| `GET`    | `/api/v1/rules/metrics`  | The closed metric catalog.                                                |
+| `GET`    | `/api/v1/rules/library`  | Curated starter rules.                                                    |
 
 Reads carry the `read:contracts` scope; authoring carries `write:contracts` and
 the `contributor` role, like contract registration.
@@ -1121,8 +1121,9 @@ the one-object-per-month layout bounds the work to the months touched.
 
 **Client-side PWA components:**
 
-- `apps/web/public/manifest.webmanifest` — Web App Manifest with icons, shortcuts, and `display: standalone`.
-- `apps/web/next.config.ts` — wraps Next.js with `@ducanh2912/next-pwa` (Workbox) to generate a service worker that precaches the app shell and runtime-caches API responses (stale-while-revalidate, 5-minute TTL).
+- `apps/web/public/manifest.webmanifest` — Web App Manifest with icons, responsive screenshots (wide & narrow), shortcuts, and `display: standalone`.
+- `apps/web/next.config.ts` — wraps Next.js with `@ducanh2912/next-pwa` (Workbox) to generate a service worker that precaches the app shell and runtime-caches public API responses (stale-while-revalidate, 5-minute TTL). User-scoped endpoints and authenticated requests bypass caching via `NetworkOnly` (see `docs/caching-policy.md` and `apps/web/worker/routing.ts`).
+- `apps/web/worker/routing.ts` — routing rules and identity header checks ensuring user-scoped endpoints (watchlist, subscriptions, groups, notes) are never cached or shared across users (#615).
 - `apps/web/lib/alertQueue.ts` — IndexedDB-backed offline alert queue (via `idb`).
 - `apps/web/hooks/useOfflineAlertQueue.ts` — React hook that reads/writes the queue and tracks `navigator.onLine`.
 - `apps/web/hooks/usePushSubscription.ts` — React hook managing the push subscription lifecycle (idle → subscribing → subscribed → denied).

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 import withPWA from "@ducanh2912/next-pwa";
+import {
+  isCacheableInternalApi,
+  isCacheableUpstreamApi,
+  isUserScopedRequest,
+} from "./worker/routing";
 
 const baseConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
@@ -19,8 +24,14 @@ export default withPWA({
   workboxOptions: {
     runtimeCaching: [
       {
-        // Stale-while-revalidate for Next.js API routes (/api/*)
-        urlPattern: /^\/api\//,
+        // Issue #615: User-scoped routes or requests with identity headers must NEVER
+        // be cached across users in the shared browser Cache Storage.
+        urlPattern: isUserScopedRequest,
+        handler: "NetworkOnly",
+      },
+      {
+        // Stale-while-revalidate for public Next.js API routes (/api/*)
+        urlPattern: isCacheableInternalApi,
         handler: "StaleWhileRevalidate",
         options: {
           cacheName: "sorolens-api-cache",
@@ -32,12 +43,8 @@ export default withPWA({
         },
       },
       {
-        // Stale-while-revalidate for the upstream Go API (NEXT_PUBLIC_API_URL)
-        urlPattern: ({ url }) => {
-          const apiBase =
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-          return url.href.startsWith(apiBase);
-        },
+        // Stale-while-revalidate for public upstream Go API (NEXT_PUBLIC_API_URL)
+        urlPattern: isCacheableUpstreamApi,
         handler: "StaleWhileRevalidate",
         options: {
           cacheName: "sorolens-upstream-api-cache",
