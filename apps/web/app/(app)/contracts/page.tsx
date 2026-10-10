@@ -412,14 +412,21 @@ function ContractsPageInner() {
     searchParams?.get(DIR_PARAM) === "asc" ? "asc" : DEFAULT_SORT_DIRECTION
   );
   // Pagination state: stack of cursors, index 0 = first page
-  const [cursors, setCursors] = useState<(string | null)[]>([null]);
-  const [cursorIndex, setCursorIndex] = useState(0);
+  const initialCursor = searchParams?.get("cursor") ?? null;
+  const [cursors, setCursors] = useState<(string | null)[]>(() =>
+    initialCursor ? [null, initialCursor] : [null]
+  );
+  const [cursorIndex, setCursorIndex] = useState(() => (initialCursor ? 1 : 0));
 
-  // Search state
-  const [search, setSearch] = useState("");
+  // Search state initialized from query params (?search= or ?q=)
+  const [search, setSearch] = useState(
+    () => searchParams?.get("search") ?? searchParams?.get("q") ?? ""
+  );
 
   // Tag filter state (server-side, combined with the network filter)
-  const [tagFilter, setTagFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState(
+    () => searchParams?.get("tag") ?? ""
+  );
 
   // CSV import state
   const [showImport, setShowImport] = useState(false);
@@ -533,19 +540,87 @@ function ContractsPageInner() {
     }
   }, [sortColumn, sortDirection]);
 
-  // Mirror the active sort into the URL so the view is shareable. The guard
-  // only writes when the URL differs, so visiting /contracts without sort
-  // params does not rewrite the URL on mount.
+  // Mirror the active filters, search, pagination and sort into the URL so the view is shareable (#175, #618).
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
     const current = params.get(SORT_PARAM) ?? DEFAULT_SORT_COLUMN;
     const currentDir =
       params.get(DIR_PARAM) === "asc" ? "asc" : DEFAULT_SORT_DIRECTION;
-    if (current === sortColumn && currentDir === sortDirection) return;
+    const currentTag = params.get("tag") ?? "";
+    const currentSearch = params.get("search") ?? params.get("q") ?? "";
+    const currentCursor = params.get("cursor") ?? "";
+    const activeCursor = cursors[cursorIndex] ?? "";
+
+    if (
+      current === sortColumn &&
+      currentDir === sortDirection &&
+      currentTag === tagFilter &&
+      currentSearch === search &&
+      currentCursor === activeCursor
+    ) {
+      return;
+    }
+
     params.set(SORT_PARAM, sortColumn);
     params.set(DIR_PARAM, sortDirection);
+
+    if (tagFilter) {
+      params.set("tag", tagFilter);
+    } else {
+      params.delete("tag");
+    }
+
+    if (search) {
+      params.set("search", search);
+      params.delete("q");
+    } else {
+      params.delete("search");
+      params.delete("q");
+    }
+
+    if (activeCursor) {
+      params.set("cursor", activeCursor);
+    } else {
+      params.delete("cursor");
+    }
+
     router.replace(`?${params.toString()}`);
-  }, [sortColumn, sortDirection, router, searchParams]);
+  }, [
+    sortColumn,
+    sortDirection,
+    tagFilter,
+    search,
+    cursorIndex,
+    cursors,
+    router,
+    searchParams,
+  ]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const newSort = sp.get(SORT_PARAM) ?? DEFAULT_SORT_COLUMN;
+      const newDir =
+        sp.get(DIR_PARAM) === "asc" ? "asc" : DEFAULT_SORT_DIRECTION;
+      const newTag = sp.get("tag") ?? "";
+      const newSearch = sp.get("search") ?? sp.get("q") ?? "";
+      const newCursor = sp.get("cursor") ?? "";
+
+      setSortColumn(newSort);
+      setSortDirection(newDir);
+      setTagFilter(newTag);
+      setSearch(newSearch);
+      if (!newCursor) {
+        setCursors([null]);
+        setCursorIndex(0);
+      } else {
+        setCursors([null, newCursor]);
+        setCursorIndex(1);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Pagination handlers

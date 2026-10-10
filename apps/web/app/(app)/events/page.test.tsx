@@ -14,6 +14,37 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GlobalEvent, GlobalEventsResponse } from "@/lib/types";
 
+const nav = vi.hoisted(() => {
+  let query = new URLSearchParams("");
+  const replace = vi.fn((href: string) => {
+    const q = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    query = new URLSearchParams(q);
+  });
+  const push = vi.fn((href: string) => {
+    const q = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    query = new URLSearchParams(q);
+  });
+  const setQuery = (q: string | URLSearchParams) => {
+    query = new URLSearchParams(q);
+    if (typeof window !== "undefined") {
+      const qStr = query.toString();
+      window.history.replaceState(null, "", qStr ? `?${qStr}` : "/events");
+    }
+  };
+  return {
+    replace,
+    push,
+    getQuery: () => query,
+    setQuery,
+  };
+});
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: nav.replace, push: nav.push }),
+  useSearchParams: () => nav.getQuery(),
+  usePathname: () => "/events",
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -57,6 +88,7 @@ function event(n: number, overrides: Partial<GlobalEvent> = {}): GlobalEvent {
 
 beforeEach(() => {
   listAllEvents.mockReset();
+  nav.setQuery("");
 });
 
 afterEach(() => {
@@ -210,5 +242,86 @@ describe("EventsExplorerPage", () => {
     expect(screen.getByRole("table").parentElement).toHaveClass(
       "overflow-x-auto"
     );
+  });
+
+  it("restores filters and cursor from URL on reload (#618)", async () => {
+    nav.setQuery(
+      "?contractId=CAAQ&type=system&from=2026-09-01&to=2026-09-02&cursor=c2"
+    );
+    listAllEvents.mockResolvedValue({ events: [event(5)], next_cursor: "" });
+
+    render(<EventsExplorerPage />);
+
+    expect(await screen.findByText("1,005")).toBeInTheDocument();
+    expect(listAllEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contractId: "CAAQ",
+        type: "system",
+        cursor: "c2",
+        since: "2026-09-01T00:00:00Z",
+        until: "2026-09-02T23:59:59Z",
+      })
+    );
+    expect(screen.getByLabelText("Contract ID")).toHaveValue("CAAQ");
+    expect(screen.getByLabelText("Event type")).toHaveValue("system");
+    expect(screen.getByLabelText("From (UTC)")).toHaveValue("2026-09-01");
+    expect(screen.getByLabelText("To (UTC)")).toHaveValue("2026-09-02");
+    expect(screen.getByText("Page 2")).toBeInTheDocument();
+  });
+
+  it("syncs filters to URL on apply and pagination (#618)", async () => {
+    listAllEvents.mockResolvedValue({
+      events: [event(1), event(2)],
+      next_cursor: "c2",
+    });
+
+    render(<EventsExplorerPage />);
+    await screen.findByText("1,001");
+
+    fireEvent.change(screen.getByLabelText("Contract ID"), {
+      target: { value: "CXYZ" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith("?contractId=CXYZ", {
+        scroll: false,
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next →" }));
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith("?contractId=CXYZ&cursor=c2", {
+        scroll: false,
+      });
+    });
+  });
+
+  it("restores state on browser back/forward navigation (popstate) (#618)", async () => {
+    listAllEvents.mockResolvedValue({ events: [event(1)], next_cursor: "" });
+    render(<EventsExplorerPage />);
+    await screen.findByText("1,001");
+
+    fireEvent.change(screen.getByLabelText("Contract ID"), {
+      target: { value: "C111" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith("?contractId=C111", {
+        scroll: false,
+      });
+    });
+
+    // Simulate browser Back button navigating to ?contractId=C222
+    nav.setQuery("?contractId=C222");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Contract ID")).toHaveValue("C222");
+      expect(listAllEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ contractId: "C222" })
+      );
+    });
   });
 });

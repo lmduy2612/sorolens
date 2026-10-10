@@ -16,6 +16,32 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const nav = vi.hoisted(() => {
+  let query = new URLSearchParams("");
+  const replace = vi.fn((href: string) => {
+    const q = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    query = new URLSearchParams(q);
+  });
+  const push = vi.fn((href: string) => {
+    const q = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    query = new URLSearchParams(q);
+  });
+  return {
+    replace,
+    push,
+    getQuery: () => query,
+    setQuery: (q: string | URLSearchParams) => {
+      query = new URLSearchParams(q);
+    },
+  };
+});
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: nav.replace, push: nav.push }),
+  useSearchParams: () => nav.getQuery(),
+  usePathname: () => "/invocations",
+}));
+
 // ── Mock @sorolens/ui (DataTable renders sortable headers) ──────────────────
 vi.mock("@sorolens/ui", () => ({
   DataTable: <T,>({
@@ -178,6 +204,7 @@ async function renderPage() {
 describe("InvocationsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    nav.setQuery("");
     mockListInvocations.mockResolvedValue({
       invocations: INVOCATIONS,
       next_cursor: null,
@@ -385,5 +412,102 @@ describe("InvocationsPage", () => {
       "invocations-next-page"
     ) as HTMLButtonElement;
     expect(next.disabled).toBe(true);
+  });
+
+  it("restores filters, sort and cursor from URL on reload (#618)", async () => {
+    nav.setQuery(
+      "?contractId=C123&fn=transfer&since=2026-09-01&until=2026-09-30&sort=cpu_insn&dir=asc&cursor=200:bb"
+    );
+
+    await renderPage();
+
+    await waitFor(() => {
+      expect(mockListInvocations).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contract_id: "C123",
+          fn: "transfer",
+          since: "2026-09-01",
+          until: "2026-09-30",
+          cursor: "200:bb",
+        })
+      );
+    });
+
+    expect(
+      (
+        document.getElementById(
+          "invocations-contract-filter"
+        ) as HTMLInputElement
+      ).value
+    ).toBe("C123");
+    expect(
+      (document.getElementById("invocations-fn-filter") as HTMLInputElement)
+        .value
+    ).toBe("transfer");
+    expect(
+      (document.getElementById("invocations-since-filter") as HTMLInputElement)
+        .value
+    ).toBe("2026-09-01");
+    expect(
+      (document.getElementById("invocations-until-filter") as HTMLInputElement)
+        .value
+    ).toBe("2026-09-30");
+    expect(screen.getByText(/Page 2/i)).toBeInTheDocument();
+  });
+
+  it("syncs filters to URL on apply and pagination (#618)", async () => {
+    mockListInvocations.mockResolvedValue({
+      invocations: INVOCATIONS,
+      next_cursor: "cursor-123",
+    });
+
+    await renderPage();
+    await waitFor(() =>
+      expect(screen.getAllByTestId("data-table-row")).toHaveLength(3)
+    );
+
+    fireEvent.change(document.getElementById("invocations-fn-filter")!, {
+      target: { value: "mint" },
+    });
+    fireEvent.submit(
+      document.getElementById("invocations-apply-filter")!.closest("form")!
+    );
+
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith("?fn=mint", { scroll: false });
+    });
+
+    const next = document.getElementById(
+      "invocations-next-page"
+    ) as HTMLButtonElement;
+    fireEvent.click(next);
+
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalledWith("?fn=mint&cursor=cursor-123", {
+        scroll: false,
+      });
+    });
+  });
+
+  it("restores state on browser back/forward navigation (popstate) (#618)", async () => {
+    await renderPage();
+    await waitFor(() =>
+      expect(screen.getAllByTestId("data-table-row")).toHaveLength(3)
+    );
+
+    // User navigates back in browser to ?fn=burn
+    nav.setQuery("?fn=burn");
+    window.history.pushState({}, "", "/invocations?fn=burn");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      expect(
+        (document.getElementById("invocations-fn-filter") as HTMLInputElement)
+          .value
+      ).toBe("burn");
+      expect(mockListInvocations).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fn: "burn" })
+      );
+    });
   });
 });

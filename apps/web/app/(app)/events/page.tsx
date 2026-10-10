@@ -1,11 +1,19 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import {
+  Fragment,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { MonoId } from "@sorolens/ui";
 import { listAllEvents } from "@/lib/api";
 import { networkFilter, useNetwork } from "@/lib/network";
 import { TableSkeleton } from "@/components/Skeleton";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 import {
   FIRST_PAGE,
   currentCursor,
@@ -37,6 +45,22 @@ interface Filters {
 }
 
 const NO_FILTERS: Filters = { contractId: "", type: "", from: "", to: "" };
+
+interface EventUrlFilters extends Record<string, unknown> {
+  contractId: string;
+  type: "" | EventType;
+  from: string;
+  to: string;
+  cursor: string;
+}
+
+const NO_URL_FILTERS: EventUrlFilters = {
+  contractId: "",
+  type: "",
+  from: "",
+  to: "",
+  cursor: "",
+};
 
 const inputClass =
   "rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]";
@@ -120,15 +144,73 @@ function EventRow({ event }: { event: GlobalEvent }) {
 }
 
 export default function EventsExplorerPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={8} />}>
+      <EventsExplorerInner />
+    </Suspense>
+  );
+}
+
+function EventsExplorerInner() {
   const { network } = useNetwork();
-  const [draft, setDraft] = useState<Filters>(NO_FILTERS);
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [history, setHistory] = useState<CursorHistory>(FIRST_PAGE);
+  const { filters: urlFilters, setFilters: setUrlFilters } =
+    useUrlFilters<EventUrlFilters>({
+      defaultValues: NO_URL_FILTERS,
+      parse: (params) => ({
+        contractId: (
+          params.get("contractId") ||
+          params.get("contract_id") ||
+          ""
+        ).trim(),
+        type: (params.get("type") as "" | EventType) || "",
+        from: params.get("from") || "",
+        to: params.get("to") || "",
+        cursor: params.get("cursor") || "",
+      }),
+    });
+
+  const [draft, setDraft] = useState<Filters>(() => ({
+    contractId: urlFilters.contractId,
+    type: urlFilters.type,
+    from: urlFilters.from,
+    to: urlFilters.to,
+  }));
+
+  // Sync draft whenever URL filters change (e.g. on Back/Forward)
+  useEffect(() => {
+    setDraft({
+      contractId: urlFilters.contractId,
+      type: urlFilters.type,
+      from: urlFilters.from,
+      to: urlFilters.to,
+    });
+  }, [urlFilters.contractId, urlFilters.type, urlFilters.from, urlFilters.to]);
+
+  const [history, setHistory] = useState<CursorHistory>(() =>
+    urlFilters.cursor ? ["", urlFilters.cursor] : FIRST_PAGE
+  );
   const [events, setEvents] = useState<GlobalEvent[]>([]);
   const [nextCursor, setNextCursor] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Sync history when URL cursor changes externally
+  useEffect(() => {
+    const cur = currentCursor(history);
+    if (cur !== urlFilters.cursor) {
+      if (!urlFilters.cursor) {
+        setHistory(FIRST_PAGE);
+      } else {
+        const idx = history.indexOf(urlFilters.cursor);
+        if (idx !== -1) {
+          setHistory(history.slice(0, idx + 1));
+        } else {
+          setHistory(["", urlFilters.cursor]);
+        }
+      }
+    }
+  }, [urlFilters.cursor]);
 
   const cursor = currentCursor(history);
 
@@ -140,10 +222,10 @@ export default function EventsExplorerPage() {
       {
         cursor: cursor || undefined,
         limit: PAGE_SIZE,
-        contractId: filters.contractId || undefined,
-        type: filters.type || undefined,
+        contractId: urlFilters.contractId || undefined,
+        type: urlFilters.type || undefined,
         network: networkFilter(network),
-        ...dateRangeToBounds(filters.from, filters.to),
+        ...dateRangeToBounds(urlFilters.from, urlFilters.to),
       },
       { signal: controller.signal }
     )
@@ -161,30 +243,51 @@ export default function EventsExplorerPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [cursor, filters, network, reloadKey]);
+  }, [
+    cursor,
+    urlFilters.contractId,
+    urlFilters.type,
+    urlFilters.from,
+    urlFilters.to,
+    network,
+    reloadKey,
+  ]);
 
   // A network switch changes the result set, so start from the first page.
+  const prevNetwork = useRef(network);
   useEffect(() => {
-    setHistory(FIRST_PAGE);
-  }, [network]);
+    if (prevNetwork.current !== network) {
+      prevNetwork.current = network;
+      setHistory(FIRST_PAGE);
+      setUrlFilters((prev) => ({ ...prev, cursor: "" }));
+    }
+  }, [network, setUrlFilters]);
 
   const rangeError = dateRangeError(draft.from, draft.to);
-  const hasFilters = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
+  const hasFilters = Boolean(
+    urlFilters.contractId || urlFilters.type || urlFilters.from || urlFilters.to
+  );
 
   const applyFilters = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (rangeError) return;
-      setFilters({ ...draft, contractId: draft.contractId.trim() });
       setHistory(FIRST_PAGE);
+      setUrlFilters({
+        contractId: draft.contractId.trim(),
+        type: draft.type,
+        from: draft.from,
+        to: draft.to,
+        cursor: "",
+      });
     },
-    [draft, rangeError]
+    [draft, rangeError, setUrlFilters]
   );
 
   const clearFilters = () => {
     setDraft(NO_FILTERS);
-    setFilters(NO_FILTERS);
     setHistory(FIRST_PAGE);
+    setUrlFilters(NO_URL_FILTERS);
   };
 
   return (
@@ -368,7 +471,14 @@ export default function EventsExplorerPage() {
         >
           <button
             type="button"
-            onClick={() => setHistory(popPage)}
+            onClick={() => {
+              const newHist = popPage(history);
+              setHistory(newHist);
+              setUrlFilters((prev) => ({
+                ...prev,
+                cursor: currentCursor(newHist),
+              }));
+            }}
             disabled={loading || pageNumber(history) === 1}
             className={buttonClass}
           >
@@ -379,7 +489,10 @@ export default function EventsExplorerPage() {
           </span>
           <button
             type="button"
-            onClick={() => setHistory((h) => pushPage(h, nextCursor))}
+            onClick={() => {
+              setHistory((h) => pushPage(h, nextCursor));
+              setUrlFilters((prev) => ({ ...prev, cursor: nextCursor }));
+            }}
             disabled={loading || !nextCursor}
             className={buttonClass}
           >

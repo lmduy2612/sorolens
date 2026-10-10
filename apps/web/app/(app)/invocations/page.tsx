@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { DataTable, MonoId } from "@sorolens/ui";
 import type { Column } from "@sorolens/ui";
 import { listInvocations } from "@/lib/api";
 import type { Invocation } from "@/lib/types";
 import { networkFilter, useNetwork } from "@/lib/network";
 import { TableSkeleton } from "@/components/Skeleton";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -22,6 +23,26 @@ interface Filters {
 }
 
 const EMPTY_FILTERS: Filters = { contractId: "", fn: "", since: "", until: "" };
+
+interface InvocationsUrlFilters extends Record<string, unknown> {
+  contractId: string;
+  fn: string;
+  since: string;
+  until: string;
+  sort: string;
+  dir: "asc" | "desc";
+  cursor: string;
+}
+
+const DEFAULT_INVOCATIONS_URL: InvocationsUrlFilters = {
+  contractId: "",
+  fn: "",
+  since: "",
+  until: "",
+  sort: "ledger_closed_at",
+  dir: "desc",
+  cursor: "",
+};
 
 function hasActiveFilters(f: Filters): boolean {
   return Boolean(f.contractId || f.fn || f.since || f.until);
@@ -138,7 +159,33 @@ const COLUMNS: Column<Invocation>[] = [
 // ---------------------------------------------------------------------------
 
 export default function InvocationsPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={PAGE_SIZE} />}>
+      <InvocationsPageInner />
+    </Suspense>
+  );
+}
+
+function InvocationsPageInner() {
   const { network } = useNetwork();
+
+  const { filters: urlFilters, setFilters: setUrlFilters } =
+    useUrlFilters<InvocationsUrlFilters>({
+      defaultValues: DEFAULT_INVOCATIONS_URL,
+      parse: (sp) => ({
+        contractId: (
+          sp.get("contractId") ||
+          sp.get("contract_id") ||
+          ""
+        ).trim(),
+        fn: (sp.get("fn") || "").trim(),
+        since: sp.get("since") || "",
+        until: sp.get("until") || "",
+        sort: sp.get("sort") || "ledger_closed_at",
+        dir: sp.get("dir") === "asc" ? "asc" : "desc",
+        cursor: sp.get("cursor") || "",
+      }),
+    });
 
   // Data state
   const [invocations, setInvocations] = useState<Invocation[]>([]);
@@ -146,17 +193,55 @@ export default function InvocationsPage() {
   const [error, setError] = useState(false);
 
   // Pagination: stack of cursors, index 0 is the first page.
-  const [cursors, setCursors] = useState<(string | null)[]>([null]);
-  const [cursorIndex, setCursorIndex] = useState(0);
+  const [cursors, setCursors] = useState<(string | null)[]>(() =>
+    urlFilters.cursor ? [null, urlFilters.cursor] : [null]
+  );
+  const [cursorIndex, setCursorIndex] = useState(() =>
+    urlFilters.cursor ? 1 : 0
+  );
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  // Filter inputs (draft) and the applied filter set the request uses.
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // Filter inputs (draft)
+  const [draft, setDraft] = useState<Filters>(() => ({
+    contractId: urlFilters.contractId,
+    fn: urlFilters.fn,
+    since: urlFilters.since,
+    until: urlFilters.until,
+  }));
 
-  // Sort state. The API returns newest first, which is the default order.
-  const [sortColumn, setSortColumn] = useState("ledger_closed_at");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  // Sync draft when URL filters change (e.g. Back/Forward)
+  useEffect(() => {
+    setDraft({
+      contractId: urlFilters.contractId,
+      fn: urlFilters.fn,
+      since: urlFilters.since,
+      until: urlFilters.until,
+    });
+  }, [
+    urlFilters.contractId,
+    urlFilters.fn,
+    urlFilters.since,
+    urlFilters.until,
+  ]);
+
+  // Sync cursor stack when URL cursor changes externally
+  useEffect(() => {
+    const cur = cursors[cursorIndex] ?? "";
+    if (cur !== urlFilters.cursor) {
+      if (!urlFilters.cursor) {
+        setCursors([null]);
+        setCursorIndex(0);
+      } else {
+        const idx = cursors.indexOf(urlFilters.cursor);
+        if (idx !== -1) {
+          setCursorIndex(idx);
+        } else {
+          setCursors([null, urlFilters.cursor]);
+          setCursorIndex(1);
+        }
+      }
+    }
+  }, [urlFilters.cursor]);
 
   // Only the most recent load may write to state.
   const loadSeq = useRef(0);
@@ -169,10 +254,10 @@ export default function InvocationsPage() {
         const data = await listInvocations({
           cursor: cursor ?? undefined,
           limit: PAGE_SIZE,
-          contract_id: filters.contractId || undefined,
-          fn: filters.fn || undefined,
-          since: filters.since || undefined,
-          until: filters.until || undefined,
+          contract_id: urlFilters.contractId || undefined,
+          fn: urlFilters.fn || undefined,
+          since: urlFilters.since || undefined,
+          until: urlFilters.until || undefined,
           network: networkFilter(network),
         });
         if (seq !== loadSeq.current) return;
@@ -181,8 +266,6 @@ export default function InvocationsPage() {
         setError(false);
       } catch {
         if (seq !== loadSeq.current) return;
-        // Backend unreachable or erroring: show the empty state instead of a
-        // stuck spinner, and let the user retry with Apply.
         setInvocations([]);
         setNextCursor(null);
         setError(true);
@@ -190,7 +273,13 @@ export default function InvocationsPage() {
         if (seq === loadSeq.current) setLoading(false);
       }
     },
-    [filters, network]
+    [
+      urlFilters.contractId,
+      urlFilters.fn,
+      urlFilters.since,
+      urlFilters.until,
+      network,
+    ]
   );
 
   useEffect(() => {
@@ -204,33 +293,40 @@ export default function InvocationsPage() {
       prevNetwork.current = network;
       setCursors([null]);
       setCursorIndex(0);
+      setUrlFilters((prev) => ({ ...prev, cursor: "" }));
     }
-  }, [network]);
+  }, [network, setUrlFilters]);
 
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
 
-  const resetToFirstPage = () => {
-    setCursors([null]);
-    setCursorIndex(0);
-  };
-
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters({
+    setCursors([null]);
+    setCursorIndex(0);
+    setUrlFilters((prev) => ({
+      ...prev,
       contractId: draft.contractId.trim(),
       fn: draft.fn.trim(),
       since: draft.since,
       until: draft.until,
-    });
-    resetToFirstPage();
+      cursor: "",
+    }));
   };
 
   const handleClear = () => {
     setDraft(EMPTY_FILTERS);
-    setFilters(EMPTY_FILTERS);
-    resetToFirstPage();
+    setCursors([null]);
+    setCursorIndex(0);
+    setUrlFilters((prev) => ({
+      ...prev,
+      contractId: "",
+      fn: "",
+      since: "",
+      until: "",
+      cursor: "",
+    }));
   };
 
   const handleNext = () => {
@@ -238,20 +334,25 @@ export default function InvocationsPage() {
     const newCursors = [...cursors.slice(0, cursorIndex + 1), nextCursor];
     setCursors(newCursors);
     setCursorIndex(cursorIndex + 1);
+    setUrlFilters((prev) => ({ ...prev, cursor: nextCursor }));
   };
 
   const handlePrev = () => {
     if (cursorIndex === 0) return;
-    setCursorIndex(cursorIndex - 1);
+    const nextIdx = cursorIndex - 1;
+    setCursorIndex(nextIdx);
+    const prevCur = cursors[nextIdx] ?? "";
+    setUrlFilters((prev) => ({ ...prev, cursor: prevCur }));
   };
 
   const handleSort = (col: string) => {
-    if (col === sortColumn) {
-      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortColumn(col);
-      setSortDirection("asc");
+    let nextDir: "asc" | "desc" = "asc";
+    if (col === urlFilters.sort) {
+      nextDir = urlFilters.dir === "asc" ? "desc" : "asc";
     }
+    setUrlFilters((prev) => ({ ...prev, sort: col, dir: nextDir }), {
+      mode: "replace",
+    });
   };
 
   // ---------------------------------------------------------------------------
@@ -260,7 +361,7 @@ export default function InvocationsPage() {
 
   const sorted = [...invocations].sort((a, b) => {
     let cmp = 0;
-    switch (sortColumn) {
+    switch (urlFilters.sort) {
       case "cpu_insn":
         cmp = a.cpu_insn - b.cpu_insn;
         break;
@@ -273,10 +374,15 @@ export default function InvocationsPage() {
           new Date(b.ledger_closed_at).getTime();
     }
     if (cmp === 0) cmp = a.tx_hash.localeCompare(b.tx_hash);
-    return sortDirection === "asc" ? cmp : -cmp;
+    return urlFilters.dir === "asc" ? cmp : -cmp;
   });
 
-  const filtersActive = hasActiveFilters(filters);
+  const filtersActive = Boolean(
+    urlFilters.contractId ||
+    urlFilters.fn ||
+    urlFilters.since ||
+    urlFilters.until
+  );
   const isFirstPage = cursorIndex === 0;
   const isLastPage = !nextCursor;
 
@@ -422,8 +528,8 @@ export default function InvocationsPage() {
           columns={COLUMNS}
           data={sorted}
           rowKey={(inv) => `${inv.ledger}:${inv.tx_hash}`}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
+          sortColumn={urlFilters.sort}
+          sortDirection={urlFilters.dir}
           onSort={handleSort}
           onRowClick={(inv) => {
             window.location.href = `/contracts/${inv.contract_id}`;
@@ -441,7 +547,7 @@ export default function InvocationsPage() {
         <div className="flex items-center justify-between">
           <span className="text-xs text-[var(--color-text-secondary)]">
             Page {cursorIndex + 1}
-            {sortColumn !== "ledger_closed_at" && (
+            {urlFilters.sort !== "ledger_closed_at" && (
               <span className="ml-2 opacity-80">
                 (sorting applies to the current page)
               </span>

@@ -691,14 +691,14 @@ describe("ContractsPage", () => {
     await renderPage();
     await waitFor(() => screen.getByTestId("data-table"));
 
-    firePaste("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+    firePaste("CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
     const toast = await screen.findByRole("alert");
     expect(toast.textContent).toMatch(/track this contract/i);
 
     fireEvent.click(screen.getByTestId("paste-track-confirm"));
     expect(nav.push).toHaveBeenCalledWith(
-      "/contracts/new?id=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      "/contracts/new?id=CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     );
   });
 
@@ -710,5 +710,85 @@ describe("ContractsPage", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it("restores search and tag filters from URL on reload (#618)", async () => {
+    nav.setQuery("?tag=defi&search=My+Contract");
+
+    await renderPage();
+    await waitFor(() => screen.getByTestId("data-table"));
+
+    expect(mockListContracts).toHaveBeenCalledWith(
+      expect.objectContaining({ tag: "defi" })
+    );
+
+    const searchInput = screen.getByPlaceholderText(
+      /search by alias or contract id/i
+    ) as HTMLInputElement;
+    const tagInput = screen.getByLabelText(
+      /filter contracts by tag/i
+    ) as HTMLInputElement;
+
+    expect(searchInput.value).toBe("My Contract");
+    expect(tagInput.value).toBe("defi");
+
+    // Check filtered rows
+    const rows = screen.getAllByTestId("data-table-row");
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain("My Contract");
+  });
+
+  it("syncs search and tag filters to URL (#618)", async () => {
+    await renderPage();
+    await waitFor(() => screen.getByTestId("data-table"));
+
+    const searchInput = screen.getByPlaceholderText(
+      /search by alias or contract id/i
+    );
+    fireEvent.change(searchInput, { target: { value: "test-search" } });
+
+    expect(nav.replace).toHaveBeenCalledWith(
+      expect.stringContaining("search=test-search")
+    );
+
+    const tagInput = screen.getByLabelText(/filter contracts by tag/i);
+    fireEvent.change(tagInput, { target: { value: "payments" } });
+
+    expect(nav.replace).toHaveBeenCalledWith(
+      expect.stringContaining("tag=payments")
+    );
+  });
+
+  it("restores search, tag and sort on browser back/forward navigation (popstate) (#618)", async () => {
+    await renderPage();
+    await waitFor(() => screen.getByTestId("data-table"));
+
+    // Navigate back in browser to ?tag=governance&search=alpha&sort=label&dir=asc
+    nav.setQuery("?tag=governance&search=alpha&sort=label&dir=asc");
+    window.history.pushState(
+      {},
+      "",
+      "/contracts?tag=governance&search=alpha&sort=label&dir=asc"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      const searchInput = screen.getByPlaceholderText(
+        /search by alias or contract id/i
+      ) as HTMLInputElement;
+      const tagInput = screen.getByLabelText(
+        /filter contracts by tag/i
+      ) as HTMLInputElement;
+
+      expect(searchInput.value).toBe("alpha");
+      expect(tagInput.value).toBe("governance");
+      expect(mockListContracts).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          tag: "governance",
+          sort: "label",
+          dir: "asc",
+        })
+      );
+    });
   });
 });
