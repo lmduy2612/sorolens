@@ -5,8 +5,14 @@ import { NavigationProgress } from "@/components/NavigationProgress";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://sorolens.dev");
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sorolens.dev"),
+  metadataBase: new URL(siteUrl),
   manifest: "/manifest.json",
   title: {
     default: "Sorolens — Indexed Observability for Soroban",
@@ -35,7 +41,7 @@ export const metadata: Metadata = {
     title: "Sorolens — Indexed Observability for Soroban",
     description:
       "Indexed observability for Soroban smart contracts — events, invocations, storage, and anomaly detection on Stellar.",
-    url: "https://sorolens.dev",
+    url: "/",
     images: [
       {
         url: "/og-image.png",
@@ -53,7 +59,7 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   alternates: {
-    canonical: "https://sorolens.dev",
+    canonical: "/",
   },
 };
 
