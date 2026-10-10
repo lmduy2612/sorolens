@@ -52,6 +52,7 @@ import type {
   RulePreview,
   RuleCatalogResponse,
   RuleLibraryResponse,
+  SearchContractsResponse,
 } from "./types";
 import { recordLastUpdated, resourceFromUrl } from "./lastUpdated";
 
@@ -143,6 +144,21 @@ export function listContracts(params?: {
   const qs = search.toString();
   return fetchJson<ContractsListResponse>(
     `${API_URL}/api/v1/contracts${qs ? "?" + qs : ""}`
+  );
+}
+
+export function searchContracts(
+  query: string,
+  params?: {
+    network?: string;
+    limit?: number;
+  }
+): Promise<SearchContractsResponse> {
+  const search = new URLSearchParams({ q: query });
+  if (params?.network) search.set("network", params.network);
+  if (params?.limit) search.set("limit", String(params.limit));
+  return fetchJson<SearchContractsResponse>(
+    `${API_URL}/api/v1/search?${search.toString()}`
   );
 }
 

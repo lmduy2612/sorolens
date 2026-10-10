@@ -87,6 +87,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                 Settings
               </Link>
             </nav>
+            <CmdkSearch />
             <NetworkSelector />
             <PushSubscribeButton />
             <ThemeToggle />

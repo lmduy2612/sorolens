@@ -148,6 +148,10 @@ export interface ContractsListResponse {
   has_more: boolean;
 }
 
+export interface SearchContractsResponse {
+  items: Contract[];
+}
+
 /** Body of POST /api/v1/contracts/:id/tags — the contract's full tag list. */
 export interface ContractTagsResponse {
   contract_id: string;

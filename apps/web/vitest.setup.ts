@@ -11,3 +11,17 @@
  * fresh connection to a fresh database name (see alertQueue.test.ts).
  */
 import "fake-indexeddb/auto";
+
+// Polyfill ResizeObserver and scrollIntoView for jsdom (required by cmdk and interactive UI)
+if (typeof window !== "undefined") {
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+}
