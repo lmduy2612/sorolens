@@ -43,6 +43,7 @@ import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { AddToGroup } from "@/components/AddToGroup";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { CallTracePanel } from "@/components/CallTracePanel";
+import { StreamStatusBadge } from "@/components/StreamStatusBadge";
 import { useEventStream } from "@/hooks/useEventStream";
 
 interface Props {
@@ -83,7 +84,11 @@ function ContractDetailContent({ id }: { id: string }) {
   const [storageHasMore, setStorageHasMore] = useState(false);
   const [currentLedger, setCurrentLedger] = useState(0);
 
-  const { isConnected: isStreamConnected } = useEventStream({
+  const {
+    isConnected: isStreamConnected,
+    status: streamStatus,
+    reconnect: reconnectStream,
+  } = useEventStream({
     contractId: id,
     onEvent: (newEvent) => {
       setEvents((prev) => {
@@ -452,12 +457,10 @@ function ContractDetailContent({ id }: { id: string }) {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold">Events</h2>
-            {isStreamConnected && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-900/40 px-2.5 py-0.5 text-xs font-medium text-green-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                Live
-              </span>
-            )}
+            <StreamStatusBadge
+              status={streamStatus}
+              onReconnect={reconnectStream}
+            />
           </div>
           <button
             type="button"
