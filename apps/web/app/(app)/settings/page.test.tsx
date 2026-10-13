@@ -20,6 +20,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const setTheme = vi.fn();
 const setNetwork = vi.fn();
 
+const mockCreateApiKey = vi.fn().mockResolvedValue({
+  id: "key_12345678",
+  name: "Web Dashboard Key",
+  key_prefix: "sl_live_abc123",
+  key: "sl_live_abc12345678901234567890123456789012345678901234",
+  scopes: ["read:contracts", "read:watchdog"],
+  created_at: "2026-10-13T08:00:00.000Z",
+});
+const mockRevokeApiKey = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@/lib/api", () => ({
+  createApiKey: (...args: any[]) => mockCreateApiKey(...args),
+  revokeApiKey: (...args: any[]) => mockRevokeApiKey(...args),
+}));
+
+if (!navigator.clipboard) {
+  Object.defineProperty(navigator, "clipboard", {
+    value: {
+      writeText: vi.fn().mockResolvedValue(undefined),
+    },
+    configurable: true,
+  });
+}
+
 vi.mock("@/components/ThemeProvider", () => ({
   useTheme: () => ({ theme: "system", setTheme }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -165,42 +189,52 @@ describe("SettingsPage", () => {
     expect(stored.notifications.channels.weekly_digest).toBe(true);
   });
 
-  it("generates an API key, persists it, then revokes it", async () => {
+  it("surfaces browser user ID with copy button", async () => {
+    await renderPage();
+
+    const userIdEl = screen.getByTestId("settings-user-id-value");
+    expect(userIdEl.textContent).toMatch(/^usr_/);
+
+    const copyBtn = screen.getByTestId("copy-user-id");
+    expect(copyBtn).toBeTruthy();
+    fireEvent.click(copyBtn);
+    await waitFor(() => expect(screen.getByText("Copied!")).toBeTruthy());
+  });
+
+  it("clearly marks notification preferences as browser storage", async () => {
+    await renderPage();
+
+    const badge = screen.getByTestId("notifications-storage-badge");
+    expect(badge.textContent).toBe("Browser Storage");
+  });
+
+  it("generates an API key via real API, displays secret alert, and revokes it", async () => {
     await renderPage();
 
     expect(screen.getByTestId("settings-api-key-value").textContent).toBe("—");
 
-    fireEvent.click(
-      within(screen.getByTestId("settings-api-key")).getByRole("button", {
-        name: "Generate key",
-      })
-    );
-    const generated = screen
-      .getByTestId("settings-api-key-value")
-      .textContent?.trim() as string;
-    expect(generated.startsWith("sl_live_")).toBe(true);
+    const generateBtn = screen.getByTestId("generate-api-key-button");
+    fireEvent.click(generateBtn);
 
-    fireEvent.click(cardSave("settings-api-key"));
+    await waitFor(() => expect(mockCreateApiKey).toHaveBeenCalledTimes(1));
+
     await waitFor(() =>
-      expect(screen.getByTestId("settings-api-key-status")).toBeTruthy()
+      expect(screen.getByTestId("api-key-created-alert")).toBeTruthy()
     );
-    expect(
-      JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) as string).apiKey
-    ).toBe(generated);
 
-    fireEvent.click(
-      within(screen.getByTestId("settings-api-key")).getByRole("button", {
-        name: "Revoke",
-      })
+    const copyKeyBtn = screen.getByTestId("copy-api-key");
+    fireEvent.click(copyKeyBtn);
+
+    const revokeBtn = screen.getByTestId("revoke-api-key-button");
+    fireEvent.click(revokeBtn);
+
+    await waitFor(() =>
+      expect(mockRevokeApiKey).toHaveBeenCalledWith("key_12345678")
     );
-    fireEvent.click(cardSave("settings-api-key"));
 
     await waitFor(() =>
       expect(screen.getByTestId("settings-api-key-value").textContent).toBe("—")
     );
-    expect(
-      JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) as string).apiKey
-    ).toBeNull();
   });
 
   it("applies a theme change through the provider", async () => {

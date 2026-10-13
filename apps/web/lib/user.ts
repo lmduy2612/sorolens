@@ -26,3 +26,38 @@ export function getUserId(): string {
     return "";
   }
 }
+
+/** Sets or overrides the browser's persistent user identity. */
+export function setUserId(id: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (id) {
+      window.localStorage.setItem(USER_STORAGE_KEY, id);
+    } else {
+      window.localStorage.removeItem(USER_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage failure
+  }
+}
+
+/**
+ * Returns existing user ID, or creates and stores a stable anonymous identity.
+ */
+export function ensureUserId(): string {
+  const existing = getUserId();
+  if (existing) return existing;
+
+  let newId = "";
+  if (
+    typeof globalThis.crypto !== "undefined" &&
+    typeof globalThis.crypto.randomUUID === "function"
+  ) {
+    newId = `usr_${globalThis.crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+  } else {
+    newId = `usr_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+  }
+
+  setUserId(newId);
+  return newId;
+}

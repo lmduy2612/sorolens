@@ -4,7 +4,6 @@ import {
   DEFAULT_SETTINGS,
   SETTINGS_STORAGE_KEY,
   clearSettings,
-  generateApiKey,
   isValidEmail,
   loadSettings,
   maskApiKey,
@@ -47,19 +46,10 @@ describe("isValidEmail", () => {
   });
 });
 
-describe("generateApiKey", () => {
-  it("returns a prefixed hex token of fixed length", () => {
-    const key = generateApiKey();
-    expect(key.startsWith("sl_live_")).toBe(true);
-    expect(key.slice("sl_live_".length)).toMatch(/^[0-9a-f]{48}$/);
-  });
-
-  it("does not repeat between calls", () => {
-    expect(generateApiKey()).not.toBe(generateApiKey());
-  });
-});
-
 describe("maskApiKey", () => {
+  it("formats key prefix with dots", () => {
+    expect(maskApiKey(null, "sl_live_abc123")).toBe("sl_live_abc123••••••••");
+  });
   it("keeps a recognisable prefix and suffix", () => {
     const key = "sl_live_00112233445566778899aabbccddeeff00112233445566";
     const masked = maskApiKey(key);
@@ -94,6 +84,8 @@ describe("loadSettings / saveSettings", () => {
           weekly_digest: true,
         },
       },
+      apiKeyId: "key_123",
+      apiKeyPrefix: "sl_live_abc",
       apiKey: "sl_live_abc",
       apiKeyCreatedAt: "2026-09-25T00:00:00.000Z",
     };

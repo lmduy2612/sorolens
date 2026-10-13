@@ -48,7 +48,11 @@ export interface UserSettings {
   /** Network pre-selected in the header selector on first load. */
   defaultNetwork: string;
   notifications: NotificationPreferences;
-  /** Plaintext token shown once after generation; null when revoked. */
+  /** Active backend API key ID created via POST /api/v1/api-keys. */
+  apiKeyId: string | null;
+  /** Key prefix (e.g. sl_live_...) returned by the backend for safe display. */
+  apiKeyPrefix: string | null;
+  /** Plaintext token shown once after creation; null after dismissed or revoked. */
   apiKey: string | null;
   apiKeyCreatedAt: string | null;
 }
@@ -66,6 +70,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
       weekly_digest: false,
     },
   },
+  apiKeyId: null,
+  apiKeyPrefix: null,
   apiKey: null,
   apiKeyCreatedAt: null,
 };
@@ -78,18 +84,9 @@ export function isValidEmail(value: string): boolean {
   return /^[^@.]+(\.[^@.]+)*@[^@.]+(\.[^@.]+)+$/.test(trimmed);
 }
 
-/** Generates a display-once API token. Not a real credential yet. */
-export function generateApiKey(): string {
-  const bytes = new Uint8Array(24);
-  globalThis.crypto.getRandomValues(bytes);
-  const body = Array.from(bytes, (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
-  return `sl_live_${body}`;
-}
-
 /** Renders a token for display without revealing the whole secret. */
-export function maskApiKey(key: string | null): string {
+export function maskApiKey(key: string | null, prefix?: string | null): string {
+  if (prefix) return `${prefix}${"•".repeat(8)}`;
   if (!key) return "";
   if (key.length <= 12) return "•".repeat(key.length);
   return `${key.slice(0, 8)}${"•".repeat(8)}${key.slice(-4)}`;
@@ -126,6 +123,9 @@ function coerceSettings(raw: unknown): UserSettings {
           DEFAULT_SETTINGS.notifications.channels.weekly_digest,
       },
     },
+    apiKeyId: typeof value.apiKeyId === "string" ? value.apiKeyId : null,
+    apiKeyPrefix:
+      typeof value.apiKeyPrefix === "string" ? value.apiKeyPrefix : null,
     apiKey: typeof value.apiKey === "string" ? value.apiKey : null,
     apiKeyCreatedAt:
       typeof value.apiKeyCreatedAt === "string" ? value.apiKeyCreatedAt : null,

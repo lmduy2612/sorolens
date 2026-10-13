@@ -32,6 +32,19 @@ export function NotificationsSection({
       status={status}
       onSave={onSave}
     >
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span
+          data-testid="notifications-storage-badge"
+          className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-page)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]"
+        >
+          Browser Storage
+        </span>
+        <span className="text-xs text-[var(--color-text-secondary)]">
+          Preferences are stored locally in this browser. Delivery requires
+          backend SMTP or alert webhook integration.
+        </span>
+      </div>
+
       <SettingsRow
         htmlFor="settings-notification-email"
         title="Email address"

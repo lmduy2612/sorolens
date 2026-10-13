@@ -681,3 +681,25 @@ export interface ContractNotesResponse {
   contract_id: string;
   notes: ContractNote[];
 }
+
+// ---- api keys ---------------------------------------------------------------
+
+export interface ApiKeyItem {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  created_at: string;
+  last_used_at?: string | null;
+  revoked_at?: string | null;
+  rotated_at?: string | null;
+}
+
+export interface CreateApiKeyResponse extends ApiKeyItem {
+  key: string;
+}
+
+export interface ListApiKeysResponse {
+  api_keys: ApiKeyItem[];
+  next_cursor?: string;
+}

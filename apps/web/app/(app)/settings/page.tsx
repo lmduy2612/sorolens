@@ -14,6 +14,7 @@ import {
   saveSettings,
   type UserSettings,
 } from "@/lib/settings";
+import { createApiKey, revokeApiKey } from "@/lib/api";
 
 type SectionId = "theme" | "network" | "notifications" | "apiKey";
 
@@ -61,6 +62,64 @@ export default function SettingsPage() {
     email.length > 0 && !isValidEmail(email)
       ? "Enter a valid email address, or leave it blank to turn email notifications off."
       : null;
+
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
+  const [isRevokingKey, setIsRevokingKey] = useState(false);
+
+  const handleGenerateKey = async () => {
+    setIsGeneratingKey(true);
+    setApiKeyError(null);
+    try {
+      const res = await createApiKey({ name: "Web Dashboard Key" });
+      const nextSettings: UserSettings = {
+        ...saved,
+        apiKey: res.key,
+        apiKeyId: res.id,
+        apiKeyPrefix: res.key_prefix,
+        apiKeyCreatedAt: res.created_at,
+      };
+      saveSettings(nextSettings);
+      setSaved(nextSettings);
+      setDraft(nextSettings);
+      setStatus((current) => ({ ...current, apiKey: "saved" }));
+    } catch (err) {
+      setApiKeyError(
+        err instanceof Error ? err.message : "Failed to create API key via API"
+      );
+      setStatus((current) => ({ ...current, apiKey: "error" }));
+    } finally {
+      setIsGeneratingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async () => {
+    setIsRevokingKey(true);
+    setApiKeyError(null);
+    try {
+      if (saved.apiKeyId) {
+        await revokeApiKey(saved.apiKeyId);
+      }
+      const nextSettings: UserSettings = {
+        ...saved,
+        apiKey: null,
+        apiKeyId: null,
+        apiKeyPrefix: null,
+        apiKeyCreatedAt: null,
+      };
+      saveSettings(nextSettings);
+      setSaved(nextSettings);
+      setDraft(nextSettings);
+      setStatus((current) => ({ ...current, apiKey: "saved" }));
+    } catch (err) {
+      setApiKeyError(
+        err instanceof Error ? err.message : "Failed to revoke API key"
+      );
+      setStatus((current) => ({ ...current, apiKey: "error" }));
+    } finally {
+      setIsRevokingKey(false);
+    }
+  };
 
   const apiKeyDirty =
     draft.apiKey !== saved.apiKey ||
@@ -121,12 +180,16 @@ export default function SettingsPage() {
 
             <ApiKeySection
               apiKey={draft.apiKey}
+              apiKeyId={draft.apiKeyId}
+              apiKeyPrefix={draft.apiKeyPrefix}
               apiKeyCreatedAt={draft.apiKeyCreatedAt}
               dirty={apiKeyDirty}
               status={status.apiKey ?? "idle"}
-              onChange={(apiKey, apiKeyCreatedAt) =>
-                setDraft((current) => ({ ...current, apiKey, apiKeyCreatedAt }))
-              }
+              isGenerating={isGeneratingKey}
+              isRevoking={isRevokingKey}
+              error={apiKeyError}
+              onGenerate={handleGenerateKey}
+              onRevoke={handleRevokeKey}
               onSave={() => commit(draft, "apiKey")}
             />
           </>

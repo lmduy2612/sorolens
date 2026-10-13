@@ -52,7 +52,11 @@ import type {
   RulePreview,
   RuleCatalogResponse,
   RuleLibraryResponse,
+  ApiKeyItem,
+  CreateApiKeyResponse,
+  ListApiKeysResponse,
 } from "./types";
+import { getUserId } from "./user";
 import { recordLastUpdated, resourceFromUrl } from "./lastUpdated";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -901,6 +905,74 @@ export function deleteContractNote(
     {
       method: "DELETE",
       headers: { "X-User-ID": userId },
+    }
+  );
+}
+
+// ---- API Keys (#613) --------------------------------------------------------
+
+export interface CreateApiKeyOptions {
+  name?: string;
+  scopes?: string[];
+  userId?: string;
+}
+
+/**
+ * Creates an API key backed by the real backend API.
+ * Plaintext token is returned only once in response.key.
+ */
+export async function createApiKey(
+  options: CreateApiKeyOptions = {}
+): Promise<CreateApiKeyResponse> {
+  const uid = options.userId || getUserId();
+  const headers: Record<string, string> = {};
+  if (uid) headers["X-User-ID"] = uid;
+
+  return fetchJson<CreateApiKeyResponse>(`${API_URL}/api/v1/api-keys`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: options.name || "Default API Key",
+      scopes: options.scopes || ["read:contracts", "read:watchdog"],
+    }),
+    headers,
+  });
+}
+
+/**
+ * Lists API keys owned by or visible to the user.
+ */
+export async function listApiKeys(
+  cursor?: string,
+  limit?: number,
+  userId?: string
+): Promise<ListApiKeysResponse> {
+  const uid = userId || getUserId();
+  const headers: Record<string, string> = {};
+  if (uid) headers["X-User-ID"] = uid;
+
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  if (limit) params.set("limit", String(limit));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+
+  return fetchJson<ListApiKeysResponse>(`${API_URL}/api/v1/api-keys${qs}`, {
+    headers,
+  });
+}
+
+/**
+ * Revokes an existing API key on the backend.
+ */
+export async function revokeApiKey(id: string, userId?: string): Promise<void> {
+  const uid = userId || getUserId();
+  const headers: Record<string, string> = {};
+  if (uid) headers["X-User-ID"] = uid;
+
+  return fetchNoContent(
+    `${API_URL}/api/v1/api-keys/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      headers,
     }
   );
 }
