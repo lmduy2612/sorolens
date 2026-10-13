@@ -375,3 +375,44 @@ export async function expectHeading(
     page.getByRole("heading", { name, exact: options.exact ?? true })
   ).toBeVisible();
 }
+
+import AxeBuilder from "@axe-core/playwright";
+
+export interface A11yCheckOptions {
+  disabledRules?: string[];
+  includedImpacts?: ("minor" | "moderate" | "serious" | "critical")[];
+}
+
+/**
+ * Runs automated Axe accessibility analysis against the active page.
+ * Asserts no serious or critical WCAG violations are present.
+ */
+export async function checkA11y(page: Page, options: A11yCheckOptions = {}) {
+  let builder = new AxeBuilder({ page }).withTags([
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa",
+  ]);
+
+  if (options.disabledRules && options.disabledRules.length > 0) {
+    builder = builder.disableRules(options.disabledRules);
+  }
+
+  const results = await builder.analyze();
+  const targetImpacts = options.includedImpacts || ["serious", "critical"];
+
+  const violations = results.violations.filter((v) =>
+    v.impact ? targetImpacts.includes(v.impact as any) : false
+  );
+
+  expect(
+    violations,
+    `Accessibility violations found on ${page.url()}:\n` +
+      violations
+        .map((v) => `[${v.impact}] ${v.id}: ${v.description} (${v.helpUrl})`)
+        .join("\n")
+  ).toEqual([]);
+
+  return results;
+}
