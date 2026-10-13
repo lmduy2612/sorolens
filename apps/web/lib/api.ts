@@ -52,6 +52,8 @@ import type {
   RulePreview,
   RuleCatalogResponse,
   RuleLibraryResponse,
+  ContractForecastResponse,
+  ForecastHorizon,
 } from "./types";
 import { recordLastUpdated, resourceFromUrl } from "./lastUpdated";
 
@@ -378,6 +380,22 @@ export function getContractStats(
 ): Promise<StatsResponse> {
   return fetchJson<StatsResponse>(
     `${API_URL}/api/v1/contracts/${id}/stats?window=${window}`
+  );
+}
+
+// ---- cost & usage forecast (issue #602) -------------------------------------
+
+/**
+ * Forecast contract usage over the next N days (fees, invocations, events).
+ */
+export function getContractForecast(
+  id: string,
+  horizon: ForecastHorizon | number = "30d"
+): Promise<ContractForecastResponse> {
+  const horizonParam = typeof horizon === "number" ? `${horizon}d` : horizon;
+  const search = new URLSearchParams({ horizon: horizonParam });
+  return fetchJson<ContractForecastResponse>(
+    `${API_URL}/api/v1/contracts/${id}/forecast?${search.toString()}`
   );
 }
 

@@ -529,6 +529,32 @@ export interface ContractVerification {
   updated_at: string;
 }
 
+// ---- cost forecast (issue #602) --------------------------------------------
+
+export type ForecastMetric = "fees" | "invocations" | "events";
+
+export interface ForecastPoint {
+  date: string;
+  value: number;
+  lower: number;
+  upper: number;
+}
+
+export interface ForecastSeries {
+  metric: ForecastMetric | string;
+  horizon: number;
+  daily_count: number;
+  points: ForecastPoint[];
+}
+
+export interface ContractForecastResponse {
+  contract_id: string;
+  lookback_days: number;
+  series: ForecastSeries[];
+}
+
+export type ForecastHorizon = "7d" | "14d" | "30d" | "90d";
+
 /** Aggregated per-contract statistics shown side by side in the compare view. */
 export interface CompareStats {
   event_count_24h: number;

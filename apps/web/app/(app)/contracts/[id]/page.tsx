@@ -43,6 +43,7 @@ import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { AddToGroup } from "@/components/AddToGroup";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { CallTracePanel } from "@/components/CallTracePanel";
+import { CostForecastChart } from "@/components/CostForecastChart";
 import { useEventStream } from "@/hooks/useEventStream";
 
 interface Props {
@@ -446,6 +447,10 @@ function ContractDetailContent({ id }: { id: string }) {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="mb-8">
+        <CostForecastChart contractId={id} />
       </section>
 
       <section className="mb-8">
