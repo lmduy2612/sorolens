@@ -286,13 +286,22 @@ const COLUMNS: Column<ContractRow>[] = [
     key: "id",
     header: "Contract ID",
     sortable: true,
-    accessor: (c) => (
-      <span
-        className={`font-mono text-xs ${isPendingRow(c) ? "opacity-60" : ""}`}
-      >
-        <LabelledId value={c.id} knownLabel={c.label} />
-      </span>
-    ),
+    accessor: (c) =>
+      isPendingRow(c) ? (
+        <span className="font-mono text-xs opacity-60">
+          <LabelledId value={c.id} knownLabel={c.label} />
+        </span>
+      ) : (
+        <Link
+          href={`/contracts/${c.id}`}
+          className="font-mono text-xs hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)] rounded"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <LabelledId value={c.id} knownLabel={c.label} />
+        </Link>
+      ),
   },
   {
     key: "network",
@@ -895,7 +904,7 @@ function ContractsPageInner() {
             onRowClick={(c) => {
               // The detail page doesn't exist until the API confirms it.
               if (isPendingRow(c)) return;
-              window.location.href = `/contracts/${c.id}`;
+              router.push(`/contracts/${c.id}`);
             }}
             emptyState={
               <div className="rounded-lg bg-[var(--color-bg-card)] px-8 py-12 text-center text-sm text-[var(--color-text-secondary)] border border-[var(--color-border)]">
@@ -935,17 +944,6 @@ function ContractsPageInner() {
             </div>
           </div>
         )}
-
-        {/* Shortcut link to contract detail (accessible) */}
-        <div className="sr-only">
-          {sorted
-            .filter((c) => !isPendingRow(c))
-            .map((c) => (
-              <Link key={c.id} href={`/contracts/${c.id}`}>
-                {c.label ?? c.id}
-              </Link>
-            ))}
-        </div>
       </div>
     </>
   );

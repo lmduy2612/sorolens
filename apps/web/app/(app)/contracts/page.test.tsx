@@ -691,14 +691,14 @@ describe("ContractsPage", () => {
     await renderPage();
     await waitFor(() => screen.getByTestId("data-table"));
 
-    firePaste("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+    firePaste("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
 
     const toast = await screen.findByRole("alert");
     expect(toast.textContent).toMatch(/track this contract/i);
 
     fireEvent.click(screen.getByTestId("paste-track-confirm"));
     expect(nav.push).toHaveBeenCalledWith(
-      "/contracts/new?id=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      "/contracts/new?id=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
     );
   });
 
@@ -710,5 +710,20 @@ describe("ContractsPage", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it("renders a real link in the Contract ID column and navigates using router on row click", async () => {
+    await renderPage();
+    await waitFor(() => screen.getByTestId("data-table"));
+
+    const contractLinks = screen.getAllByRole("link").filter((el) =>
+      el.getAttribute("href")?.startsWith("/contracts/C")
+    );
+    expect(contractLinks.length).toBeGreaterThan(0);
+    expect(contractLinks[0]).toHaveAttribute("href", `/contracts/${CONTRACT_B.id}`);
+
+    const rows = screen.getAllByTestId("data-table-row");
+    fireEvent.click(rows[0]);
+    expect(nav.push).toHaveBeenCalledWith(`/contracts/${CONTRACT_B.id}`);
   });
 });

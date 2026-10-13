@@ -174,4 +174,77 @@ describe("DataTable", () => {
     expect(container.querySelector("tbody")).toBeNull();
     expect(screen.queryByText("Alpha")).toBeNull();
   });
+
+  it("sets scope='col' and correct aria-sort attributes on headers", () => {
+    const { container, rerender } = render(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        sortColumn="id"
+        sortDirection="asc"
+      />
+    );
+
+    const headers = container.querySelectorAll("th");
+    expect(headers.length).toBe(3);
+    headers.forEach((th) => {
+      expect(th).toHaveAttribute("scope", "col");
+    });
+
+    // ID is sorted ascending
+    expect(headers[0]).toHaveAttribute("aria-sort", "ascending");
+    // Name is sortable but not current sort column
+    expect(headers[1]).toHaveAttribute("aria-sort", "none");
+    // Count is not sortable
+    expect(headers[2]).not.toHaveAttribute("aria-sort");
+
+    rerender(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        sortColumn="id"
+        sortDirection="desc"
+      />
+    );
+    expect(headers[0]).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("handles keyboard navigation on rows with Enter and Space", () => {
+    const onRowClick = vi.fn();
+    const { container } = render(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        onRowClick={onRowClick}
+      />
+    );
+
+    const rows = container.querySelectorAll("tbody tr");
+    expect(rows.length).toBe(3);
+    expect(rows[0]).toHaveAttribute("tabindex", "0");
+    expect(rows[0]).toHaveAttribute("role", "button");
+
+    fireEvent.keyDown(rows[0], { key: "Enter" });
+    expect(onRowClick).toHaveBeenCalledWith(DATA[0]);
+
+    fireEvent.keyDown(rows[1], { key: " " });
+    expect(onRowClick).toHaveBeenCalledWith(DATA[1]);
+  });
+
+  it("renders accessible real link when getRowHref is provided", () => {
+    render(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        getRowHref={(item) => `/items/${item.id}`}
+      />
+    );
+
+    const link = screen.getByRole("link", { name: "a" });
+    expect(link).toHaveAttribute("href", "/items/a");
+  });
 });
