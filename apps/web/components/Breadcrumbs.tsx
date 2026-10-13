@@ -15,6 +15,7 @@ import { useParams, usePathname } from "next/navigation";
 const SECTION_LABELS: Record<string, string> = {
   compare: "Compare",
   contracts: "Contracts",
+  changelog: "Changelog",
   events: "Events",
   playground: "Playground",
   watchdog: "Watchdog",

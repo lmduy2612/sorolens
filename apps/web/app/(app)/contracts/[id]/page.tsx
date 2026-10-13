@@ -366,6 +366,14 @@ function ContractDetailContent({ id }: { id: string }) {
           </span>
           <AddToGroup contractId={id} />
           <VerifiedBadge contractId={id} />
+          <Link
+            href={`/contracts/${id}/changelog`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+            title="View Wasm bytecode changelog, Atom feed, and embeddable badge"
+          >
+            <span>Changelog</span>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
         {contract?.sync && (
           <div className="mt-1 flex gap-4 text-xs text-[var(--color-text-secondary)]">

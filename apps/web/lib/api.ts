@@ -43,6 +43,7 @@ import type {
   GroupsListResponse,
   GroupStats,
   ContractVerification,
+  ContractVersionEntry,
   LabelResolution,
   TraceResponse,
   RulesResponse,
@@ -442,6 +443,24 @@ export function getContractVerification(
   return fetchJson<ContractVerification>(
     `${API_URL}/api/v1/contracts/${id}/verification`
   );
+}
+
+// ---- contract changelog (issue #601) ---------------------------------------
+
+export function getContractChangelog(
+  id: string
+): Promise<ContractVersionEntry[]> {
+  return fetchJson<ContractVersionEntry[]>(
+    `${API_URL}/contracts/${id}/changelog`
+  );
+}
+
+export function contractChangelogFeedUrl(id: string): string {
+  return `${API_URL}/contracts/${id}/changelog/feed`;
+}
+
+export function contractChangelogBadgeUrl(id: string): string {
+  return `${API_URL}/contracts/${id}/changelog/badge`;
 }
 
 // ---- watchdog --------------------------------------------------------------

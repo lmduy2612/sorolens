@@ -529,6 +529,18 @@ export interface ContractVerification {
   updated_at: string;
 }
 
+// ---- contract changelog (issue #601) ---------------------------------------
+
+export interface ContractVersionEntry {
+  id: number;
+  contract_id: string;
+  wasm_hash: string;
+  first_seen_ledger: number;
+  tx_hash?: string;
+  verified_source_ref?: string;
+  recorded_at: string;
+}
+
 /** Aggregated per-contract statistics shown side by side in the compare view. */
 export interface CompareStats {
   event_count_24h: number;
