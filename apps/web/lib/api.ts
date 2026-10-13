@@ -43,6 +43,8 @@ import type {
   GroupsListResponse,
   GroupStats,
   ContractVerification,
+  ContractUpgrade,
+  ContractUpgradesResponse,
   LabelResolution,
   TraceResponse,
   RulesResponse,
@@ -441,6 +443,21 @@ export function getContractVerification(
 ): Promise<ContractVerification> {
   return fetchJson<ContractVerification>(
     `${API_URL}/api/v1/contracts/${id}/verification`
+  );
+}
+
+// ---- contract upgrades (issue #603) ----------------------------------------
+
+/**
+ * Fetch the Wasm code upgrade history for a contract, newest first.
+ */
+export function getContractUpgrades(
+  id: string,
+  limit = 50
+): Promise<ContractUpgradesResponse> {
+  const search = new URLSearchParams({ limit: String(limit) });
+  return fetchJson<ContractUpgradesResponse>(
+    `${API_URL}/api/v1/contracts/${id}/upgrades?${search.toString()}`
   );
 }
 

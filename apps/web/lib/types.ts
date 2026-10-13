@@ -529,6 +529,22 @@ export interface ContractVerification {
   updated_at: string;
 }
 
+// ---- contract upgrades (issue #603) ----------------------------------------
+
+export interface ContractUpgrade {
+  contract_id: string;
+  from_hash: string;
+  to_hash: string;
+  ledger: number;
+  tx_hash?: string;
+  at: string;
+  verified_source_ref?: string;
+}
+
+export interface ContractUpgradesResponse {
+  upgrades: ContractUpgrade[];
+}
+
 /** Aggregated per-contract statistics shown side by side in the compare view. */
 export interface CompareStats {
   event_count_24h: number;

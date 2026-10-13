@@ -43,6 +43,7 @@ import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { AddToGroup } from "@/components/AddToGroup";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { CallTracePanel } from "@/components/CallTracePanel";
+import { ContractUpgradesTimeline } from "@/components/ContractUpgradesTimeline";
 import { useEventStream } from "@/hooks/useEventStream";
 
 interface Props {
@@ -509,6 +510,11 @@ function ContractDetailContent({ id }: { id: string }) {
       <section className="mb-8">
         <h2 className="mb-4 text-xl font-semibold">Snapshot / replay</h2>
         <SnapshotPanel contractId={id} currentLedger={currentLedger} />
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-4 text-xl font-semibold">Upgrade history</h2>
+        <ContractUpgradesTimeline contractId={id} />
       </section>
 
       <section className="mb-8">
