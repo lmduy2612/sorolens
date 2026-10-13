@@ -65,3 +65,15 @@ test("contract detail renders the cross-contract call trace", async ({
   await expect(flame.getByText("transfer")).toBeVisible();
   await expect(page.getByText("1 cross-contract call")).toBeVisible();
 });
+
+test("contract detail links to compare with pre-filled contract ID", async ({
+  page,
+}) => {
+  await mockApi(page);
+  await page.goto(`/contracts/${CONTRACT_ID}`);
+
+  const compareLink = page.getByTestId("compare-contract-btn");
+  await expect(compareLink).toBeVisible();
+  await compareLink.click();
+  await expect(page).toHaveURL(new RegExp(`/compare\\?ids=${CONTRACT_ID}`));
+});

@@ -5,8 +5,8 @@
  */
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ContractSummary } from "@/lib/types";
 import { ContractSelector } from "./ContractSelector";
 
@@ -69,5 +69,54 @@ describe("ContractSelector", () => {
     const [emptySlot] = screen.getAllByTestId("compare-slot-empty");
     expect(screen.getByText("Slot 1")).not.toHaveAttribute("title");
     expect(emptySlot).toBeInTheDocument();
+  });
+
+  it("allows manually adding a contract by valid ID", async () => {
+    const onSelect = vi.fn();
+    const validId = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    render(
+      <ContractSelector selected={[]} onSelect={onSelect} contracts={[]} />
+    );
+
+    const input = screen.getByTestId("manual-contract-input");
+    const addBtn = screen.getByTestId("add-contract-btn");
+
+    fireEvent.change(input, { target: { value: validId } });
+    expect(addBtn).not.toBeDisabled();
+    fireEvent.click(addBtn);
+
+    expect(onSelect).toHaveBeenCalledWith([validId]);
+  });
+
+  it("shows validation error when entering an invalid contract ID", async () => {
+    const onSelect = vi.fn();
+    render(
+      <ContractSelector selected={[]} onSelect={onSelect} contracts={[]} />
+    );
+
+    const input = screen.getByTestId("manual-contract-input");
+    const addBtn = screen.getByTestId("add-contract-btn");
+
+    fireEvent.change(input, { target: { value: "invalid-id" } });
+    fireEvent.click(addBtn);
+
+    expect(onSelect).not.toHaveBeenCalled();
+    const errorMsg = await screen.findByTestId("manual-input-error");
+    expect(errorMsg).toBeInTheDocument();
+    expect(errorMsg).toHaveTextContent(/Contract ID must start with 'C'/i);
+  });
+
+  it("marks an invalid contract slot with an invalid badge", () => {
+    render(
+      <ContractSelector
+        selected={["INVALID_ID"]}
+        onSelect={() => {}}
+        contracts={[]}
+      />
+    );
+
+    const badge = screen.getByTestId("invalid-slot-badge");
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("Invalid");
   });
 });

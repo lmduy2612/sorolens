@@ -527,6 +527,22 @@ describe("ContractsPage", () => {
     expect(screen.getByText(/1 selected/i)).toBeDefined();
   });
 
+  it("navigates to /compare with selected contract IDs when Compare button is clicked", async () => {
+    await renderPage();
+    await waitFor(() => screen.getByTestId("data-table"));
+
+    selectRow(CONTRACT_A.id);
+    selectRow(CONTRACT_B.id);
+
+    const compareBtn = document.getElementById("bulk-compare-btn");
+    expect(compareBtn).toBeInTheDocument();
+    fireEvent.click(compareBtn!);
+
+    expect(nav.push).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/compare\?ids=/)
+    );
+  });
+
   // ── Pagination: next enabled and advances when has_more=true ─────────────
   it("Next button is enabled and triggers next page fetch when has_more=true", async () => {
     mockListContracts
@@ -691,14 +707,14 @@ describe("ContractsPage", () => {
     await renderPage();
     await waitFor(() => screen.getByTestId("data-table"));
 
-    firePaste("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+    firePaste("C" + "C".repeat(55));
 
     const toast = await screen.findByRole("alert");
     expect(toast.textContent).toMatch(/track this contract/i);
 
     fireEvent.click(screen.getByTestId("paste-track-confirm"));
     expect(nav.push).toHaveBeenCalledWith(
-      "/contracts/new?id=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      "/contracts/new?id=" + "C".repeat(56)
     );
   });
 

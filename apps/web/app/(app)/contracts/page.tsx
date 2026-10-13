@@ -825,6 +825,20 @@ function ContractsPageInner() {
             </span>
             <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
               <button
+                id="bulk-compare-btn"
+                data-testid="bulk-compare-btn"
+                type="button"
+                onClick={() => {
+                  const idsToCompare = Array.from(selected).slice(0, 4);
+                  router.push(`/compare?ids=${idsToCompare.join(",")}`);
+                }}
+                disabled={bulkPending}
+                className="rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Compare
+                {selected.size > 1 ? ` (${Math.min(selected.size, 4)})` : ""}
+              </button>
+              <button
                 id="bulk-tag-btn"
                 type="button"
                 onClick={() => setShowTagModal(true)}

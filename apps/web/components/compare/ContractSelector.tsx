@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { ContractSummary } from "@/lib/types";
+import { isValidContractId } from "@/lib/compare";
 
 interface ContractSelectorProps {
   selected: string[];
@@ -17,6 +19,9 @@ export function ContractSelector({
   contracts,
   max = 4,
 }: ContractSelectorProps) {
+  const [manualInput, setManualInput] = useState("");
+  const [inputError, setInputError] = useState<string | null>(null);
+
   const byId = new Map(contracts.map((c) => [c.id, c]));
   const slots = Array.from({ length: max }, (_, i) => selected[i] ?? null);
 
@@ -28,7 +33,33 @@ export function ContractSelector({
     }
   };
 
-  const clear = () => onSelect([]);
+  const handleAddManual = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = manualInput.trim().toUpperCase();
+    if (!trimmed) return;
+    if (!isValidContractId(trimmed, contracts)) {
+      setInputError(
+        "Contract ID must start with 'C' and be 56 uppercase alphanumeric characters."
+      );
+      return;
+    }
+    if (selected.includes(trimmed)) {
+      setInputError("Contract ID is already in comparison.");
+      return;
+    }
+    if (selected.length >= max) {
+      setInputError(`Maximum of ${max} contracts can be compared.`);
+      return;
+    }
+    setInputError(null);
+    setManualInput("");
+    onSelect([...selected, trimmed]);
+  };
+
+  const clear = () => {
+    setInputError(null);
+    onSelect([]);
+  };
 
   return (
     <div className="space-y-4">
@@ -50,22 +81,35 @@ export function ContractSelector({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {slots.map((id, i) => {
           const contract = id ? byId.get(id) : undefined;
+          const isInvalid = id ? !isValidContractId(id, contracts) : false;
           return (
             <div
               key={id ?? `empty-slot-${i}`}
               className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${
                 id
-                  ? "border-[var(--color-accent)] bg-[var(--color-bg-card)]"
+                  ? isInvalid
+                    ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
+                    : "border-[var(--color-accent)] bg-[var(--color-bg-card)]"
                   : "border-dashed border-[var(--color-border)]"
               }`}
               data-testid={id ? "compare-slot-filled" : "compare-slot-empty"}
             >
-              <span
-                className="min-w-0 truncate text-[var(--color-text-secondary)]"
-                title={id ?? undefined}
-              >
-                {id ? (contract?.label ?? shortId(id)) : `Slot ${i + 1}`}
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className="min-w-0 truncate text-[var(--color-text-secondary)]"
+                  title={id ?? undefined}
+                >
+                  {id ? (contract?.label ?? shortId(id)) : `Slot ${i + 1}`}
+                </span>
+                {id && isInvalid && (
+                  <span
+                    data-testid="invalid-slot-badge"
+                    className="shrink-0 rounded bg-amber-500/20 px-1 py-0.5 text-[10px] text-amber-300 font-medium"
+                  >
+                    Invalid
+                  </span>
+                )}
+              </div>
               {id && (
                 <button
                   type="button"
@@ -80,6 +124,42 @@ export function ContractSelector({
           );
         })}
       </div>
+
+      <form
+        onSubmit={handleAddManual}
+        className="flex flex-col gap-1 sm:flex-row sm:items-center"
+      >
+        <div className="flex flex-1 gap-2">
+          <input
+            type="text"
+            placeholder="Add contract by ID (e.g. C...)"
+            value={manualInput}
+            onChange={(e) => {
+              setManualInput(e.target.value);
+              if (inputError) setInputError(null);
+            }}
+            data-testid="manual-contract-input"
+            className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-xs font-mono text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!manualInput.trim() || selected.length >= max}
+            data-testid="add-contract-btn"
+            className="rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Add to compare
+          </button>
+        </div>
+        {inputError && (
+          <span
+            className="text-xs text-amber-400"
+            role="alert"
+            data-testid="manual-input-error"
+          >
+            {inputError}
+          </span>
+        )}
+      </form>
 
       <p className="text-sm text-[var(--color-text-secondary)]">
         Select 2–{max} contracts to compare

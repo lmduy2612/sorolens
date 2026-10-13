@@ -51,6 +51,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                 Contracts
               </Link>
               <Link
+                href="/compare"
+                className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              >
+                Compare
+              </Link>
+              <Link
                 href="/events"
                 className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
               >

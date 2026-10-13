@@ -1,7 +1,7 @@
 import { CompareView } from "@/components/compare";
 import type { TimeWindow } from "@/lib/types";
 
-const SUPPORTED_WINDOWS: TimeWindow[] = ["24h", "7d", "30d"];
+const SUPPORTED_WINDOWS: TimeWindow[] = ["24h", "7d", "30d", "all"];
 const DEFAULT_WINDOW: TimeWindow = "7d";
 const MAX_IDS = 4;
 

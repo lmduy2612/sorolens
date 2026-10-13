@@ -11,8 +11,13 @@ test("navigation links reach the /contracts and /watchdog routes", async ({
   const nav = page.locator("header nav");
   await expect(nav).toContainText("Live");
   await expect(nav).toContainText("Contracts");
+  await expect(nav).toContainText("Compare");
   await expect(nav).toContainText("Watchdog");
   await expect(nav).toContainText("Playground");
+
+  await nav.getByRole("link", { name: "Compare" }).click();
+  await expect(page).toHaveURL(/\/compare$/);
+  await expectHeading(page, "Compare Contracts");
 
   await nav.getByRole("link", { name: "Watchdog" }).click();
   await expect(page).toHaveURL(/\/watchdog$/);

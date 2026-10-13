@@ -3,6 +3,7 @@ import {
   COMPARE_METRICS,
   bestFor,
   deltaTone,
+  isValidContractId,
   metricValue,
   worsePercent,
 } from "./compare";
@@ -99,5 +100,32 @@ describe("metricValue", () => {
   it("returns null for an uncomputed health score", () => {
     expect(metricValue(entry({ health_score: null }), healthSpec)).toBeNull();
     expect(metricValue(entry({ health_score: 0 }), healthSpec)).toBe(0);
+  });
+});
+
+describe("isValidContractId", () => {
+  const valid56 = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+  it("returns true for standard 56-character Soroban contract IDs", () => {
+    expect(isValidContractId(valid56)).toBe(true);
+  });
+
+  it("returns true when ID is in knownContracts list", () => {
+    expect(
+      isValidContractId("custom-tracked-contract", [
+        { id: "custom-tracked-contract" },
+      ])
+    ).toBe(true);
+  });
+
+  it("NEGATIVE: returns false for invalid contract ID formats", () => {
+    expect(isValidContractId("")).toBe(false);
+    expect(isValidContractId("not-an-id")).toBe(false);
+    expect(isValidContractId("12345")).toBe(false);
+    expect(
+      isValidContractId(
+        "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      )
+    ).toBe(false);
   });
 });

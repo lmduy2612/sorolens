@@ -129,3 +129,18 @@ export function bestFor(
   }
   return best;
 }
+
+/**
+ * Validates a contract identifier for comparison.
+ * Returns true if the ID matches known tracked contracts, or satisfies
+ * the Soroban contract ID format (starting with 'C', base32/alphanumeric, 50-60 chars).
+ */
+export function isValidContractId(
+  id: string,
+  knownContracts?: Array<{ id: string }>
+): boolean {
+  if (!id || typeof id !== "string") return false;
+  const trimmed = id.trim();
+  if (knownContracts?.some((c) => c.id === trimmed)) return true;
+  return /^C[A-Z0-9]{50,60}$/.test(trimmed);
+}

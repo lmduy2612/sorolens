@@ -161,4 +161,48 @@ describe("CompareView", () => {
     );
     expect(screen.getByTestId("sparkline-empty")).toBeInTheDocument();
   });
+
+  it("supports all time windows including 'all'", async () => {
+    mockGetCompare.mockResolvedValue({
+      window: "all",
+      contracts: [entry({}), entry({ id: ID_B, label: "Beta" })],
+    });
+
+    render(<CompareView initialIds={[ID_A, ID_B]} initialWindow="all" />);
+
+    await waitFor(() =>
+      expect(mockGetCompare).toHaveBeenCalledWith([ID_A, ID_B], "all")
+    );
+  });
+
+  it("handles invalid contract IDs by surfacing an alert and filtering them out of comparison", async () => {
+    render(
+      <CompareView
+        initialIds={[ID_A, ID_B, "NOT_A_VALID_CONTRACT_ID"]}
+        initialWindow="7d"
+      />
+    );
+
+    const alert = await screen.findByTestId("invalid-ids-alert");
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent("NOT_A_VALID_CONTRACT_ID");
+
+    // Only valid IDs are queried
+    expect(mockGetCompare).toHaveBeenCalledWith([ID_A, ID_B], "7d");
+  });
+
+  it("NEGATIVE: does not call getCompare when fewer than 2 valid IDs are provided", async () => {
+    render(
+      <CompareView
+        initialIds={[ID_A, "INVALID_ID_1", "INVALID_ID_2"]}
+        initialWindow="7d"
+      />
+    );
+
+    await screen.findByTestId("invalid-ids-alert");
+    expect(mockGetCompare).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Select at least 2 valid contracts to compare")
+    ).toBeInTheDocument();
+  });
 });
