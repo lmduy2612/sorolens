@@ -155,12 +155,20 @@ export default function WatchdogPage() {
           on the deployed watchdog contract, then push status updates on your
           own schedule.
         </p>
-        <Link
-          href="/watchdog/notifications"
-          className="mt-3 inline-block text-sm text-[var(--color-accent)] hover:underline"
-        >
-          Notification channels (Slack, Discord, PagerDuty) →
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-4">
+          <Link
+            href="/watchdog/reports"
+            className="text-sm text-[var(--color-accent)] hover:underline"
+          >
+            SLA &amp; uptime reports →
+          </Link>
+          <Link
+            href="/watchdog/notifications"
+            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline"
+          >
+            Notification channels (Slack, Discord, PagerDuty) →
+          </Link>
+        </div>
       </div>
 
       {/* Summary cards: always render values, defaulting to 0 when the

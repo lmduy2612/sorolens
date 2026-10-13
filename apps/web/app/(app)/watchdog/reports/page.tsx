@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   contractReportUrl,
   contractSLABadgeUrl,
@@ -11,6 +12,7 @@ import type { MonthlySLA } from "@/lib/types";
 import { TableSkeleton } from "@/components/Skeleton";
 
 const MONTHS_SHOWN = 12;
+const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -18,6 +20,14 @@ const MONTHS_SHOWN = 12;
 
 function currentMonth(): string {
   return new Date().toISOString().slice(0, 7);
+}
+
+function validateMonth(val: string): string | null {
+  if (!val || !val.trim()) return "Month is required.";
+  if (!MONTH_REGEX.test(val.trim())) {
+    return "Invalid month format. Please select a valid month (YYYY-MM).";
+  }
+  return null;
 }
 
 function formatSeconds(seconds: number): string {
@@ -87,11 +97,18 @@ function MetricCard({
 /**
  * Monthly uptime bar chart.
  *
- * Hand-rolled SVG rather than a charting dependency: the series is twelve
- * values against a fixed 0-100 axis, which is a few rects, and this keeps the
- * page's bundle unchanged.
+ * Interactive SVG rendering twelve monthly SLA buckets. Selecting a bar
+ * focuses that month's details across the page.
  */
-function UptimeChart({ months }: { months: MonthlySLA[] }) {
+export function UptimeChart({
+  months,
+  selectedMonth,
+  onSelectMonth,
+}: {
+  months: MonthlySLA[];
+  selectedMonth?: string;
+  onSelectMonth?: (month: string) => void;
+}) {
   const width = 720;
   const height = 180;
   const padX = 36;
@@ -109,94 +126,203 @@ function UptimeChart({ months }: { months: MonthlySLA[] }) {
     (height - padY * 2) * (Math.max(0, Math.min(100, pct)) / 100);
 
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height + 24}`}
-      className="w-full"
-      role="img"
-      aria-label="Monthly uptime for the last twelve months"
-    >
-      {[0, 25, 50, 75, 100].map((tick) => {
-        const y = padY + (height - padY * 2) * (1 - tick / 100);
-        return (
-          <g key={tick}>
-            <line
-              x1={padX}
-              x2={width - padX}
-              y1={y}
-              y2={y}
-              stroke="var(--color-border)"
-              strokeWidth="1"
-            />
-            <text
-              x={padX - 6}
-              y={y + 3}
-              textAnchor="end"
-              className="fill-[var(--color-text-secondary)]"
-              fontSize="9"
-            >
-              {tick}%
-            </text>
-          </g>
-        );
-      })}
+    <div className="space-y-2">
+      <svg
+        viewBox={`0 0 ${width} ${height + 24}`}
+        className="w-full"
+        role="img"
+        data-testid="sla-history-chart"
+        aria-label="Monthly uptime for the last twelve months"
+      >
+        {[0, 25, 50, 75, 100].map((tick) => {
+          const y = padY + (height - padY * 2) * (1 - tick / 100);
+          return (
+            <g key={tick}>
+              <line
+                x1={padX}
+                x2={width - padX}
+                y1={y}
+                y2={y}
+                stroke="var(--color-border)"
+                strokeWidth="1"
+              />
+              <text
+                x={padX - 6}
+                y={y + 3}
+                textAnchor="end"
+                className="fill-[var(--color-text-secondary)]"
+                fontSize="9"
+              >
+                {tick}%
+              </text>
+            </g>
+          );
+        })}
 
-      {months.map((m, i) => {
-        const hasData = m.total_checks > 0;
-        const h = hasData ? Math.max(2, scale(m.uptime_pct)) : 0;
-        const x = padX + i * (barWidth + barGap);
-        const colour = !hasData
-          ? "var(--color-border)"
-          : m.uptime_pct >= 99.9
-            ? "#2ea44f"
-            : m.uptime_pct >= 99.0
-              ? "#d29922"
-              : "#d73a49";
-        return (
-          <g key={m.month}>
-            <rect
-              x={x}
-              y={height - padY - h}
-              width={barWidth}
-              height={h}
-              fill={colour}
-              rx="2"
+        {months.map((m, i) => {
+          const hasData = m.total_checks > 0;
+          const h = hasData ? Math.max(2, scale(m.uptime_pct)) : 0;
+          const x = padX + i * (barWidth + barGap);
+          const isSelected = m.month === selectedMonth;
+          const colour = !hasData
+            ? "var(--color-border)"
+            : m.uptime_pct >= 99.9
+              ? "#2ea44f"
+              : m.uptime_pct >= 99.0
+                ? "#d29922"
+                : "#d73a49";
+
+          return (
+            <g
+              key={m.month}
+              role="button"
+              tabIndex={0}
+              data-testid={`bar-${m.month}`}
+              aria-label={`${m.month}: ${hasData ? formatPct(m.uptime_pct) : "no data"}`}
+              aria-selected={isSelected}
+              className="cursor-pointer focus:outline-none"
+              onClick={() => onSelectMonth?.(m.month)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectMonth?.(m.month);
+                }
+              }}
             >
-              <title>
-                {m.month}: {hasData ? formatPct(m.uptime_pct) : "no data"}
-              </title>
-            </rect>
-            <text
-              x={x + barWidth / 2}
-              y={height + 8}
-              textAnchor="middle"
-              className="fill-[var(--color-text-secondary)]"
-              fontSize="9"
-            >
-              {m.month.slice(5)}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+              <rect
+                x={x}
+                y={height - padY - h}
+                width={barWidth}
+                height={h}
+                fill={colour}
+                stroke={isSelected ? "var(--color-accent, #89b4fa)" : "none"}
+                strokeWidth={isSelected ? "2" : "0"}
+                rx="2"
+              >
+                <title>
+                  {m.month}: {hasData ? formatPct(m.uptime_pct) : "no data"}
+                  {isSelected ? " (Selected)" : ""}
+                </title>
+              </rect>
+              <text
+                x={x + barWidth / 2}
+                y={height + 8}
+                textAnchor="middle"
+                className={
+                  isSelected
+                    ? "fill-[var(--color-accent, #89b4fa)] font-semibold"
+                    : "fill-[var(--color-text-secondary)]"
+                }
+                fontSize="9"
+              >
+                {m.month.slice(5)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-end gap-4 text-xs text-[var(--color-text-secondary)]">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#2ea44f]" />
+          <span>&ge;99.9% (SLA Met)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#d29922]" />
+          <span>&ge;99.0% (At Risk)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#d73a49]" />
+          <span>&lt;99.0% (SLA Missed)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[var(--color-border)]" />
+          <span>No Data</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Page
+// Page Content
 // ---------------------------------------------------------------------------
 
-export default function SLAReportsPage() {
-  const [contractId, setContractId] = useState("");
-  const [month, setMonth] = useState(currentMonth);
+function SLAReportsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialContract = searchParams?.get("contract") ?? "";
+  const initialMonth = searchParams?.get("month") ?? currentMonth();
+
+  const [contractId, setContractId] = useState(initialContract);
+  const [month, setMonth] = useState(
+    MONTH_REGEX.test(initialMonth) ? initialMonth : currentMonth()
+  );
+  const [monthError, setMonthError] = useState<string | null>(() =>
+    validateMonth(initialMonth)
+  );
+
   const [history, setHistory] = useState<MonthlySLA[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The contract picker. A failure here is not fatal: the page still works for
-  // a contract id typed or linked in directly.
   const [contracts, setContracts] = useState<
     { contract_id: string; name: string }[]
   >([]);
+
+  // Keep state synced when external URL searchParams change
+  useEffect(() => {
+    const c = searchParams?.get("contract");
+    if (c !== null && c !== undefined && c !== contractId) {
+      setContractId(c);
+    }
+    const m = searchParams?.get("month");
+    if (m && m !== month) {
+      const err = validateMonth(m);
+      setMonthError(err);
+      if (!err) {
+        setMonth(m);
+      }
+    }
+  }, [searchParams]);
+
+  // Synchronize state with URL parameters (deep links)
+  const updateUrl = useCallback(
+    (newContractId: string, newMonth: string) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      let changed = false;
+
+      if (newContractId) {
+        if (params.get("contract") !== newContractId) {
+          params.set("contract", newContractId);
+          changed = true;
+        }
+      } else if (params.has("contract")) {
+        params.delete("contract");
+        changed = true;
+      }
+
+      if (newMonth && !validateMonth(newMonth)) {
+        if (params.get("month") !== newMonth) {
+          params.set("month", newMonth);
+          changed = true;
+        }
+      } else if (params.has("month")) {
+        params.delete("month");
+        changed = true;
+      }
+
+      if (changed) {
+        const qs = params.toString();
+        router.replace(qs ? `/watchdog/reports?${qs}` : "/watchdog/reports", {
+          scroll: false,
+        });
+      }
+    },
+    [router, searchParams]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -236,14 +362,29 @@ export default function SLAReportsPage() {
     void load(contractId);
   }, [contractId, load]);
 
-  // The selected month's bucket, so the cards and the exports always agree with
-  // the month the user picked rather than always showing the newest one.
+  const handleContractChange = (val: string) => {
+    setContractId(val);
+    updateUrl(val, month);
+  };
+
+  const handleMonthChange = (val: string) => {
+    const err = validateMonth(val);
+    setMonthError(err);
+    setMonth(val);
+    if (!err) {
+      updateUrl(contractId, val);
+    }
+  };
+
   const selected = useMemo(
     () => history.find((m) => m.month === month) ?? null,
     [history, month]
   );
 
-  const badgeUrl = contractId ? contractSLABadgeUrl(contractId, month) : "";
+  const isExportReady = Boolean(
+    contractId && !monthError && MONTH_REGEX.test(month)
+  );
+  const badgeUrl = isExportReady ? contractSLABadgeUrl(contractId, month) : "";
 
   return (
     <div>
@@ -270,7 +411,7 @@ export default function SLAReportsPage() {
             <select
               id="sla-contract"
               value={contractId}
-              onChange={(e) => setContractId(e.target.value)}
+              onChange={(e) => handleContractChange(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
             >
               <option value="">Select a monitored contract…</option>
@@ -285,7 +426,7 @@ export default function SLAReportsPage() {
               id="sla-contract"
               type="text"
               value={contractId}
-              onChange={(e) => setContractId(e.target.value.trim())}
+              onChange={(e) => handleContractChange(e.target.value.trim())}
               placeholder="C…"
               spellCheck={false}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 font-mono text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none"
@@ -304,22 +445,32 @@ export default function SLAReportsPage() {
             id="sla-month"
             type="month"
             value={month}
-            onChange={(e) => setMonth(e.target.value || currentMonth())}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className={`rounded-lg border bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none ${
+              monthError
+                ? "border-red-500 focus:border-red-500"
+                : "border-[var(--color-border)]"
+            }`}
           />
+          {monthError && (
+            <p className="mt-1 text-xs text-red-400" role="alert">
+              {monthError}
+            </p>
+          )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <a
             id="sla-export-csv"
             href={
-              contractId
+              isExportReady
                 ? contractReportUrl(contractId, month, "csv")
                 : undefined
             }
-            aria-disabled={!contractId}
+            download={contractId ? `${contractId}-sla-${month}.csv` : undefined}
+            aria-disabled={!isExportReady}
             className={`rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium transition-colors ${
-              contractId
+              isExportReady
                 ? "text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
                 : "pointer-events-none opacity-40"
             }`}
@@ -329,16 +480,38 @@ export default function SLAReportsPage() {
           <a
             id="sla-export-pdf"
             href={
-              contractId
+              isExportReady
                 ? contractReportUrl(contractId, month, "pdf")
                 : undefined
             }
-            aria-disabled={!contractId}
+            download={contractId ? `${contractId}-sla-${month}.pdf` : undefined}
+            aria-disabled={!isExportReady}
             className={`rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-bg-page)] transition-opacity ${
-              contractId ? "hover:opacity-90" : "pointer-events-none opacity-40"
+              isExportReady
+                ? "hover:opacity-90"
+                : "pointer-events-none opacity-40"
             }`}
           >
             Export PDF
+          </a>
+          <a
+            id="sla-export-json"
+            href={
+              isExportReady
+                ? contractReportUrl(contractId, month, "json")
+                : undefined
+            }
+            download={
+              contractId ? `${contractId}-sla-${month}.json` : undefined
+            }
+            aria-disabled={!isExportReady}
+            className={`rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium transition-colors ${
+              isExportReady
+                ? "text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+                : "pointer-events-none opacity-40"
+            }`}
+          >
+            Export JSON
           </a>
         </div>
       </div>
@@ -363,7 +536,7 @@ export default function SLAReportsPage() {
 
       {contractId && loading && <TableSkeleton rows={6} />}
 
-      {contractId && !loading && selected && (
+      {contractId && !loading && selected && !monthError && (
         <>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
@@ -412,7 +585,11 @@ export default function SLAReportsPage() {
                 {selected.total_alerts === 1 ? "" : "s"}
               </span>
             </div>
-            <UptimeChart months={history} />
+            <UptimeChart
+              months={history}
+              selectedMonth={month}
+              onSelectMonth={(m) => handleMonthChange(m)}
+            />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -453,7 +630,6 @@ export default function SLAReportsPage() {
               <h2 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">
                 Embed this month&apos;s badge
               </h2>
-              {/* A live preview: the URL is the deliverable, so show the result. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={badgeUrl}
@@ -484,11 +660,19 @@ export default function SLAReportsPage() {
         </>
       )}
 
-      {contractId && !loading && !selected && !error && (
+      {contractId && !loading && !selected && !error && !monthError && (
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-8 py-12 text-center text-sm text-[var(--color-text-secondary)]">
           No report for {month}. The contract may not have been monitored then.
         </div>
       )}
     </div>
+  );
+}
+
+export default function SLAReportsPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={6} />}>
+      <SLAReportsPageContent />
+    </Suspense>
   );
 }

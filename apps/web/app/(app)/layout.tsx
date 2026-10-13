@@ -63,6 +63,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                 Watchdog
               </Link>
               <Link
+                href="/watchdog/reports"
+                className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              >
+                Reports
+              </Link>
+              <Link
                 href="/groups"
                 className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
               >

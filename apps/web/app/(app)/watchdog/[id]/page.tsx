@@ -124,7 +124,15 @@ function Content({ id }: { id: string }) {
                 {contract.contract_id}
               </p>
             </div>
-            <HealthBadge status={contract.status} />
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/watchdog/reports?contract=${contract.contract_id}`}
+                className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+              >
+                SLA Reports →
+              </Link>
+              <HealthBadge status={contract.status} />
+            </div>
           </div>
           <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
