@@ -100,7 +100,7 @@ export function ContractNotes({
           rows={4}
           spellCheck={false}
           placeholder="Why was this contract migrated? Who owns it?"
-          className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none"
+          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <span className="text-xs text-[var(--color-text-secondary)]">
@@ -111,13 +111,13 @@ export function ContractNotes({
             data-testid="note-submit"
             onClick={submitDraft}
             disabled={saving}
-            className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-fg)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add note
           </button>
         </div>
         {message && (
-          <p role="alert" className="mt-2 text-xs text-red-400">
+          <p role="alert" className="mt-2 text-xs text-[var(--color-danger)]">
             {message}
           </p>
         )}
@@ -191,7 +191,7 @@ export function ContractNotes({
                       rows={4}
                       spellCheck={false}
                       onChange={(e) => setEditDraft(e.target.value)}
-                      className="w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+                      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
                     />
                     <div className="mt-2 flex gap-2">
                       <button
@@ -199,7 +199,7 @@ export function ContractNotes({
                         data-testid="note-save"
                         disabled={saving}
                         onClick={() => submitEdit(note.id)}
-                        className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-fg)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -221,7 +221,7 @@ export function ContractNotes({
                   // emits tags it generates itself, so this HTML is safe.
                   <div
                     data-testid="note-body"
-                    className="text-sm leading-relaxed text-[var(--color-text-primary)] [&_a]:text-[var(--color-accent)] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--color-border)] [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-black/40 [&_code]:px-1 [&_h1]:mb-2 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:mb-1 [&_h3]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-black/40 [&_pre]:p-3"
+                    className="text-sm leading-relaxed text-[var(--color-text-primary)] [&_a]:text-[var(--color-accent)] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--color-border)] [&_blockquote]:pl-3 [&_code]:rounded [&_code]:border [&_code]:border-[var(--color-border)] [&_code]:bg-[var(--color-bg-page)] [&_code]:px-1 [&_h1]:mb-2 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:mb-1 [&_h3]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:border [&_pre]:border-[var(--color-border)] [&_pre]:bg-[var(--color-bg-page)] [&_pre]:p-3"
                     dangerouslySetInnerHTML={{
                       __html: renderMarkdown(note.body),
                     }}

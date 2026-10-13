@@ -691,14 +691,15 @@ describe("ContractsPage", () => {
     await renderPage();
     await waitFor(() => screen.getByTestId("data-table"));
 
-    firePaste("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+    const validId = "C" + "A".repeat(55);
+    firePaste(validId);
 
     const toast = await screen.findByRole("alert");
     expect(toast.textContent).toMatch(/track this contract/i);
 
     fireEvent.click(screen.getByTestId("paste-track-confirm"));
     expect(nav.push).toHaveBeenCalledWith(
-      "/contracts/new?id=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      `/contracts/new?id=${validId}`
     );
   });
 

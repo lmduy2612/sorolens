@@ -366,11 +366,11 @@ export default function ImportContractsCsv({
             const file = e.target.files?.[0];
             if (file) void handleFile(file);
           }}
-          className="mb-4 w-full rounded-lg border border-[var(--color-border)] bg-black/30 px-3 py-2 text-sm text-[var(--color-text-primary)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-accent)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--color-bg-page)] disabled:opacity-50"
+          className="mb-4 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-primary)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-accent)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--color-bg-page)] disabled:opacity-50"
         />
 
         {parseError && (
-          <p className="mb-4 text-sm text-red-400" role="alert">
+          <p className="mb-4 text-sm text-[var(--color-danger)]" role="alert">
             {parseError}
           </p>
         )}

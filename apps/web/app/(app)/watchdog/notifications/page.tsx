@@ -320,7 +320,7 @@ export default function NotificationsPage() {
           secret as <code>SLACK_SIGNING_SECRET</code> on the API so requests are
           verified.
         </p>
-        <code className="mt-3 block overflow-x-auto rounded bg-black/30 p-3 font-mono text-xs">
+        <code className="mt-3 block overflow-x-auto rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] p-3 font-mono text-xs">
           {API_URL}/integrations/slack/commands
         </code>
       </section>

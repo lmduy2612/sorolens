@@ -56,14 +56,14 @@ function metricLabel(node: TraceNode, metric: Metric): string {
   return "";
 }
 
-// Warm palette, one shade per depth, so nested frames read like a flame graph.
+// Warm palette, one shade per depth, with WCAG AA contrast against white text in both themes.
 const DEPTH_COLORS = [
-  "bg-amber-500/70",
-  "bg-orange-500/70",
-  "bg-rose-500/70",
-  "bg-pink-500/70",
-  "bg-fuchsia-500/70",
-  "bg-purple-500/70",
+  "bg-amber-700 dark:bg-amber-600/80",
+  "bg-orange-700 dark:bg-orange-600/80",
+  "bg-rose-700 dark:bg-rose-600/80",
+  "bg-pink-700 dark:bg-pink-600/80",
+  "bg-fuchsia-700 dark:bg-fuchsia-600/80",
+  "bg-purple-700 dark:bg-purple-600/80",
 ];
 
 function FlameFrame({

@@ -62,7 +62,10 @@ export function InvocationFrequencyChart({
             border: "1px solid var(--color-border)",
             borderRadius: "0.5rem",
             fontSize: "0.875rem",
+            color: "var(--color-text-primary)",
           }}
+          itemStyle={{ color: "var(--color-text-primary)" }}
+          labelStyle={{ color: "var(--color-text-secondary)" }}
           formatter={(value) => formatCountTooltip(value)}
         />
         <Bar

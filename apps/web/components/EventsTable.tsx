@@ -28,7 +28,7 @@ function EventRow({ event }: { event: ContractEvent }) {
   return (
     <>
       <tr
-        className="cursor-pointer border-b border-[var(--color-border)] transition-colors hover:bg-white/5"
+        className="cursor-pointer border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-hover)]"
         onClick={() => setExpanded(!expanded)}
       >
         <td className="px-4 py-3 font-mono text-xs">
@@ -73,7 +73,7 @@ function EventRow({ event }: { event: ContractEvent }) {
                 <div className="mb-1 text-xs font-medium text-[var(--color-text-secondary)]">
                   Decoded Topics
                 </div>
-                <pre className="overflow-x-auto rounded bg-black/20 p-3 font-mono text-xs leading-relaxed">
+                <pre className="overflow-x-auto rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] p-3 font-mono text-xs leading-relaxed">
                   {JSON.stringify(decodedTopics, null, 2)}
                 </pre>
               </div>
@@ -81,7 +81,7 @@ function EventRow({ event }: { event: ContractEvent }) {
                 <div className="mb-1 text-xs font-medium text-[var(--color-text-secondary)]">
                   Raw Value
                 </div>
-                <pre className="overflow-x-auto rounded bg-black/20 p-3 font-mono text-xs leading-relaxed">
+                <pre className="overflow-x-auto rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] p-3 font-mono text-xs leading-relaxed">
                   {event.value_decoded != null
                     ? JSON.stringify(event.value_decoded, null, 2)
                     : event.value_xdr}
@@ -144,7 +144,7 @@ export function EventsTable({
             type="button"
             onClick={onLoadMore}
             disabled={loading}
-            className="rounded-md bg-white/10 px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-white/20 disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
           >
             {loading ? "Loading..." : "Load More"}
           </button>

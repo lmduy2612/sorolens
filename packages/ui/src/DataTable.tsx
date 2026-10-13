@@ -97,7 +97,7 @@ export function DataTable<T>({
               <tr
                 key={rowKey(item)}
                 onClick={() => onRowClick?.(item)}
-                className={`border-b border-[var(--color-border)] transition-colors hover:bg-white/5 ${
+                className={`border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-hover)] ${
                   onRowClick ? "cursor-pointer" : ""
                 }`}
               >

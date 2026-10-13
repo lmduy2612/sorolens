@@ -51,12 +51,12 @@ function EventRow({ event }: { event: GlobalEvent }) {
 
   return (
     <>
-      <tr className="border-b border-[var(--color-border)] align-top transition-colors hover:bg-white/5">
+      <tr className="border-b border-[var(--color-border)] align-top transition-colors hover:bg-[var(--color-bg-hover)]">
         <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
           <MonoId value={event.contract_id} headChars={6} tailChars={6} />
         </td>
         <td className="whitespace-nowrap px-4 py-3 text-sm">
-          <span className="rounded bg-white/5 px-2 py-0.5 text-xs">
+          <span className="rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
             {event.type}
           </span>
         </td>
@@ -82,14 +82,14 @@ function EventRow({ event }: { event: GlobalEvent }) {
         </td>
       </tr>
       {expanded && (
-        <tr className="border-b border-[var(--color-border)] bg-white/[0.02]">
+        <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-page)]/50">
           <td colSpan={5} className="px-4 py-3">
             <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <p className="mb-1 text-xs font-medium text-[var(--color-text-secondary)]">
                   Topics
                 </p>
-                <pre className="max-h-64 overflow-auto rounded bg-black/30 p-3 font-mono text-xs">
+                <pre className="max-h-64 overflow-auto rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] p-3 font-mono text-xs">
                   {formatEventData(event.topic_decoded ?? event.topic_xdr)}
                 </pre>
               </div>
@@ -97,7 +97,7 @@ function EventRow({ event }: { event: GlobalEvent }) {
                 <p className="mb-1 text-xs font-medium text-[var(--color-text-secondary)]">
                   Value
                 </p>
-                <pre className="max-h-64 overflow-auto rounded bg-black/30 p-3 font-mono text-xs">
+                <pre className="max-h-64 overflow-auto rounded bg-[var(--color-bg-page)] border border-[var(--color-border)] p-3 font-mono text-xs">
                   {formatEventData(data)}
                 </pre>
               </div>

@@ -472,7 +472,7 @@ export default function SLAReportsPage() {
                 readOnly
                 rows={2}
                 value={`![SLA](${badgeUrl})`}
-                className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-black/30 p-2 font-mono text-xs text-[var(--color-text-primary)]"
+                className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-page)] p-2 font-mono text-xs text-[var(--color-text-primary)]"
               />
               <p className="mt-3 border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-text-secondary)]">
                 Exports are signed with HMAC-SHA256; the signature is returned

@@ -2,27 +2,37 @@
 
 :root[data-theme="light"],
 :root {
-  --color-warning: #d97706;
+  --color-warning: #b45309;
   --color-danger: #e11d48;
-  --color-safe: #16a34a;
+  --color-safe: #15803d;
+  --color-bg: #f8fafc;
   --color-bg-card: #ffffff;
   --color-bg-page: #f8fafc;
+  --color-bg-hover: #f1f5f9;
+  --color-surface: #ffffff;
   --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
-  --color-accent: #3b82f6;
+  --color-accent: #2563eb;
+  --color-accent-fg: #ffffff;
 }
 
 :root[data-theme="dark"] {
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-safe: #22c55e;
+  --color-bg: #11111b;
   --color-bg-card: #1e1e2e;
   --color-bg-page: #11111b;
+  --color-bg-hover: #313244;
+  --color-surface: #1e1e2e;
   --color-border: #313244;
+  --color-border-hover: #45475a;
   --color-text-primary: #cdd6f4;
   --color-text-secondary: #a6adc8;
   --color-accent: #89b4fa;
+  --color-accent-fg: #11111b;
 }
 body {
   background-color: var(--color-bg-page);

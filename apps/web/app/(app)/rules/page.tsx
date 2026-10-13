@@ -260,7 +260,7 @@ export default function RulesPage() {
             <button
               onClick={save}
               disabled={!canSave || saving}
-              className="rounded bg-[var(--color-accent,#3b82f6)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save rule"}
             </button>
