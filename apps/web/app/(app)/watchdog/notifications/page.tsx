@@ -18,20 +18,12 @@ import type {
   MonitoredContract,
 } from "@/lib/types";
 
-const STORAGE_KEY = "sorolens_user_id";
+import { useUserId } from "@/lib/user";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 const inputClass =
   "w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]";
-
-function readUserId(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) || "";
-  } catch {
-    return "";
-  }
-}
 
 /** Turns API failures into something actionable for this page. */
 function describeError(err: unknown): string {
@@ -49,7 +41,7 @@ function destination(sub: AlertSubscription): string {
 }
 
 export default function NotificationsPage() {
-  const [userId, setUserId] = useState("");
+  const userId = useUserId();
   const [subs, setSubs] = useState<AlertSubscription[]>([]);
   const [monitored, setMonitored] = useState<MonitoredContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,13 +68,11 @@ export default function NotificationsPage() {
   }, []);
 
   useEffect(() => {
-    const uid = readUserId();
-    setUserId(uid);
-    void load(uid);
+    void load(userId);
     listMonitoredContracts({ limit: 200 })
       .then((res) => setMonitored(res.contracts ?? []))
       .catch(() => setMonitored([]));
-  }, [load]);
+  }, [load, userId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

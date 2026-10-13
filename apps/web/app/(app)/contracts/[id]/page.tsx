@@ -42,6 +42,7 @@ import { SnapshotPanel } from "@/components/SnapshotPanel";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { AddToGroup } from "@/components/AddToGroup";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { StarButton } from "@/components/StarButton";
 import { CallTracePanel } from "@/components/CallTracePanel";
 import { useEventStream } from "@/hooks/useEventStream";
 
@@ -364,6 +365,7 @@ function ContractDetailContent({ id }: { id: string }) {
           >
             {contract?.status}
           </span>
+          <StarButton contractId={id} showToast />
           <AddToGroup contractId={id} />
           <VerifiedBadge contractId={id} />
         </div>

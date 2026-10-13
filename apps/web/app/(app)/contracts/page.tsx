@@ -14,13 +14,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DataTable, Toast } from "@sorolens/ui";
 import type { Column } from "@sorolens/ui";
 import { LabelledId } from "@/components/LabelledId";
+import { StarButton } from "@/components/StarButton";
 import { useContracts } from "@/hooks/useContracts";
-import { ApiError, batchContracts } from "@/lib/api";
+import { ApiError, batchContracts, listWatchlist } from "@/lib/api";
 import type { BatchContractsAction } from "@/lib/types";
 import { networkFilter, useNetwork } from "@/lib/network";
 import { contractRowKey, isPendingRow } from "@/lib/optimisticTrack";
 import type { ContractRow } from "@/lib/optimisticTrack";
-import { getUserId } from "@/lib/user";
+import { getUserId, useUserId } from "@/lib/user";
 import { TableSkeleton } from "@/components/Skeleton";
 import ImportContractsCsv from "@/components/ImportContractsCsv";
 
@@ -441,6 +442,24 @@ function ContractsPageInner() {
   const toastSeq = useRef(0);
   const dismissToast = useCallback(() => setToast(null), []);
 
+  const userId = useUserId();
+  const [watchlistIds, setWatchlistIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    listWatchlist(userId)
+      .then((res) => {
+        if (!cancelled) {
+          setWatchlistIds(new Set((res.items ?? []).map((i) => i.contract_id)));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   // Paste-to-add contract (#178). Pasting a valid Soroban contract id anywhere
   // on the page surfaces a "Track this contract?" toast whose Confirm routes to
   // the tracking wizard with the id prefilled (so the network step still runs).
@@ -717,8 +736,42 @@ function ContractsPageInner() {
         />
       ),
     };
-    return [selectColumn, ...makeColumns((tag) => setTagFilter(tag))];
-  }, [allSelected, pageIds, selected, toggleAll, toggleRow]);
+    const starColumn: Column<ContractRow> = {
+      key: "star",
+      header: "",
+      accessor: (c) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <StarButton
+            contractId={c.id}
+            userId={userId}
+            initialInWatchlist={watchlistIds.has(c.id)}
+            showToast
+            onToggle={(inList) => {
+              setWatchlistIds((prev) => {
+                const next = new Set(prev);
+                if (inList) next.add(c.id);
+                else next.delete(c.id);
+                return next;
+              });
+            }}
+          />
+        </div>
+      ),
+    };
+    return [
+      selectColumn,
+      starColumn,
+      ...makeColumns((tag) => setTagFilter(tag)),
+    ];
+  }, [
+    allSelected,
+    pageIds,
+    selected,
+    toggleAll,
+    toggleRow,
+    userId,
+    watchlistIds,
+  ]);
 
   // ---------------------------------------------------------------------------
   // Render
