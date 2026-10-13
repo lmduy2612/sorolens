@@ -18,6 +18,7 @@ export interface DataTableProps<T> {
   sortDirection?: "asc" | "desc";
   onSort?: (columnKey: string) => void;
   className?: string;
+  stickyFirstColumn?: boolean;
 }
 
 export function DataTable<T>({
@@ -31,6 +32,7 @@ export function DataTable<T>({
   sortDirection,
   onSort,
   className = "",
+  stickyFirstColumn = true,
 }: DataTableProps<T>) {
   if (loading) {
     return (
@@ -55,16 +57,22 @@ export function DataTable<T>({
     <div
       className={`rounded-lg bg-[var(--color-bg-card)] overflow-hidden ${className}`}
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto scrollbar-thin">
+        <table className="w-full text-left border-collapse min-w-[360px]">
           <thead>
             <tr className="border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-text-secondary)]">
-              {columns.map((col) => {
+              {columns.map((col, colIdx) => {
                 const isSorted = sortColumn === col.key;
+                const isSticky = stickyFirstColumn && colIdx === 0;
+
                 return (
                   <th
                     key={col.key}
                     className={`px-4 py-3 ${
+                      isSticky
+                        ? "sticky left-0 z-20 bg-[var(--color-bg-card)] shadow-[1px_0_0_0_var(--color-border)]"
+                        : ""
+                    } ${
                       col.sortable
                         ? "cursor-pointer select-none hover:text-[var(--color-text-primary)]"
                         : ""
@@ -97,19 +105,30 @@ export function DataTable<T>({
               <tr
                 key={rowKey(item)}
                 onClick={() => onRowClick?.(item)}
-                className={`border-b border-[var(--color-border)] transition-colors hover:bg-white/5 ${
+                className={`border-b border-[var(--color-border)] transition-colors hover:bg-[var(--color-bg-hover)] ${
                   onRowClick ? "cursor-pointer" : ""
                 }`}
               >
-                {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-sm">
-                    {col.accessor
-                      ? col.accessor(item)
-                      : String(
-                          (item as Record<string, unknown>)[col.key] ?? "-"
-                        )}
-                  </td>
-                ))}
+                {columns.map((col, colIdx) => {
+                  const isSticky = stickyFirstColumn && colIdx === 0;
+
+                  return (
+                    <td
+                      key={col.key}
+                      className={`px-4 py-3 text-sm ${
+                        isSticky
+                          ? "sticky left-0 z-10 bg-[var(--color-bg-card)] shadow-[1px_0_0_0_var(--color-border)]"
+                          : ""
+                      }`}
+                    >
+                      {col.accessor
+                        ? col.accessor(item)
+                        : String(
+                            (item as Record<string, unknown>)[col.key] ?? "-"
+                          )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

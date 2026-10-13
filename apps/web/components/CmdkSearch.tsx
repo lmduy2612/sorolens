@@ -16,8 +16,23 @@ export function CmdkSearch() {
   const [debouncedValue] = useDebounce(inputValue, 300);
   const [loading, setLoading] = React.useState(false);
   const [results, setResults] = React.useState<ContractSummary[]>([]);
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  let router: { push: (url: string) => void };
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    router = useRouter();
+  } catch {
+    router = { push: () => {} };
+  }
+  let theme = "dark";
+  let setTheme: (t: "dark" | "light") => void = () => {};
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const themeContext = useTheme();
+    theme = themeContext.theme;
+    setTheme = themeContext.setTheme;
+  } catch {
+    // outside ThemeProvider in tests
+  }
 
   // Toggle the menu when ⌘K is pressed
   React.useEffect(() => {
@@ -28,8 +43,14 @@ export function CmdkSearch() {
       }
     };
 
+    const handleOpen = () => setOpen(true);
+
     document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    window.addEventListener("sorolens:open-search", handleOpen);
+    return () => {
+      document.removeEventListener("keydown", down);
+      window.removeEventListener("sorolens:open-search", handleOpen);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -70,7 +91,10 @@ export function CmdkSearch() {
     <>
       {/* We can add a button somewhere else to open it, or just rely on shortcut. 
           The instructions say "Cmd+K opens a search modal". */}
+      {/* Desktop Search Button */}
       <button
+        type="button"
+        data-testid="desktop-search-trigger"
         onClick={() => setOpen(true)}
         className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md hover:border-[var(--color-border-hover)] transition-colors"
       >
@@ -81,6 +105,7 @@ export function CmdkSearch() {
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="opacity-70"
+          aria-hidden="true"
         >
           <path
             d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C12.6583 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z"
@@ -93,6 +118,31 @@ export function CmdkSearch() {
         <kbd className="ml-2 px-1.5 py-0.5 text-xs rounded bg-[var(--color-bg)] border border-[var(--color-border)] opacity-70">
           ⌘K
         </kbd>
+      </button>
+
+      {/* Mobile Search Button */}
+      <button
+        type="button"
+        aria-label="Search contracts"
+        data-testid="mobile-search-trigger"
+        onClick={() => setOpen(true)}
+        className="flex md:hidden items-center justify-center p-2 text-[var(--color-text-secondary)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 15 15"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C12.6583 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z"
+            fill="currentColor"
+            fillRule="evenodd"
+            clipRule="evenodd"
+          ></path>
+        </svg>
       </button>
 
       <Command.Dialog

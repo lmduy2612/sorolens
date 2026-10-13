@@ -174,4 +174,35 @@ describe("DataTable", () => {
     expect(container.querySelector("tbody")).toBeNull();
     expect(screen.queryByText("Alpha")).toBeNull();
   });
+
+  it("applies sticky classes to the first column when stickyFirstColumn is true", () => {
+    const { container } = render(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        stickyFirstColumn={true}
+      />
+    );
+    const ths = container.querySelectorAll("th");
+    expect(ths[0].className).toContain("sticky left-0");
+    expect(ths[1].className).not.toContain("sticky left-0");
+
+    const firstRowTds = container.querySelectorAll("tbody tr:first-child td");
+    expect(firstRowTds[0].className).toContain("sticky left-0");
+    expect(firstRowTds[1].className).not.toContain("sticky left-0");
+  });
+
+  it("does not apply sticky classes when stickyFirstColumn is false", () => {
+    const { container } = render(
+      <DataTable
+        columns={COLUMNS}
+        data={DATA}
+        rowKey={(i) => i.id}
+        stickyFirstColumn={false}
+      />
+    );
+    const ths = container.querySelectorAll("th");
+    expect(ths[0].className).not.toContain("sticky left-0");
+  });
 });

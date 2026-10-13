@@ -16,6 +16,7 @@ import { NetworkSelector } from "@/components/NetworkSelector";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CmdkSearch } from "@/components/CmdkSearch";
 import { LastUpdated } from "@/components/LastUpdated";
+import { MobileNavDrawer } from "@/components/MobileNavDrawer";
 import { OfflineBanner } from "@/components/OfflineAlert";
 import { PushSubscribeButton } from "@/components/PushSubscribeButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -28,15 +29,18 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     <>
       <OfflineBanner isOffline={isOffline} pendingCount={pending.length} />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-2xl font-bold tracking-tight"
-          >
-            <img src="/logo.svg" alt="" className="h-8 w-8" aria-hidden />
-            Sorolens
-          </Link>
-          <div className="flex flex-wrap items-center gap-4">
+        <header className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-2xl font-bold tracking-tight"
+            >
+              <img src="/logo.svg" alt="" className="h-8 w-8" aria-hidden />
+              Sorolens
+            </Link>
+            <CmdkSearch />
+          </div>
+          <div className="hidden md:flex flex-wrap items-center gap-4">
             <nav className="flex gap-4 text-sm">
               <Link
                 href="/live"
@@ -91,6 +95,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <PushSubscribeButton />
             <ThemeToggle />
           </div>
+          <MobileNavDrawer />
         </header>
         <Breadcrumbs />
         <main>{children}</main>
