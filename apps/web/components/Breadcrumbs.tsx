@@ -16,6 +16,7 @@ const SECTION_LABELS: Record<string, string> = {
   compare: "Compare",
   contracts: "Contracts",
   events: "Events",
+  integrations: "Integrations",
   playground: "Playground",
   watchdog: "Watchdog",
   watchlist: "Watchlist",

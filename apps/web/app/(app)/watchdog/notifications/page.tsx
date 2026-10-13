@@ -143,6 +143,16 @@ export default function NotificationsPage() {
           Integration secrets are stored server side and never shown again after
           you save them.
         </p>
+        <div className="mt-3 flex items-center gap-2">
+          <Link
+            href="/integrations"
+            data-testid="integrations-guide-link"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:underline"
+          >
+            🔌 View Slack, Discord &amp; Telegram setup guides and send test
+            messages →
+          </Link>
+        </div>
       </div>
 
       <form
