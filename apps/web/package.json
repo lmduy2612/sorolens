@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
+    "check:budget": "node scripts/check-bundle-budget.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -26,6 +28,7 @@
     "use-debounce": "^10.1.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.4.0",
     "@next/eslint-plugin-next": "^15.3.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.1.6",

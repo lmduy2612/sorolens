@@ -8,6 +8,7 @@ import {
   listMonitoredContracts,
 } from "@/lib/api";
 import type { MonthlySLA } from "@/lib/types";
+import Image from "next/image";
 import { TableSkeleton } from "@/components/Skeleton";
 
 const MONTHS_SHOWN = 12;
@@ -454,12 +455,13 @@ export default function SLAReportsPage() {
                 Embed this month&apos;s badge
               </h2>
               {/* A live preview: the URL is the deliverable, so show the result. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={badgeUrl}
                 alt={`SLA badge for ${selected.month}`}
+                width={120}
                 height={20}
-                className="mb-3"
+                unoptimized
+                className="mb-3 h-5 w-auto"
               />
               <label
                 htmlFor="sla-badge-snippet"

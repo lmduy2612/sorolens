@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Performance and bundle size budgets for Sorolens Web Dashboard",
+  "limits": {
+    "maxSharedFirstLoadJsKb": 250,
+    "maxRouteFirstLoadJsKb": 400,
+    "maxTotalClientBundleMb": 3.0,
+    "maxIndividualChunkKb": 250
+  },
+  "lighthouseBudgets": [
+    {
+      "resourceSizes": [
+        {
+          "resourceType": "script",
+          "budget": 450
+        },
+        {
+          "resourceType": "total",
+          "budget": 800
+        },
+        {
+          "resourceType": "image",
+          "budget": 150
+        },
+        {
+          "resourceType": "font",
+          "budget": 100
+        }
+      ],
+      "resourceCounts": [
+        {
+          "resourceType": "third-party",
+          "budget": 10
+        }
+      ]
+    }
+  ]
+}

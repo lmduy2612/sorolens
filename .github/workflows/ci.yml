@@ -231,6 +231,9 @@ jobs:
           # at build time. Real values are set in Vercel project settings.
           NEXT_PUBLIC_API_URL: http://localhost:8080
         run: pnpm build
+      - name: Check performance and bundle budget
+        working-directory: apps/web
+        run: pnpm run check:budget
   # ------------------------------------------------------------
   # Rust: fixture contract
   # ------------------------------------------------------------
