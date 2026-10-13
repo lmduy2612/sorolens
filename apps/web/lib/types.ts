@@ -18,6 +18,19 @@ export interface ContractDetail extends Contract {
   added_at: string;
 }
 
+export interface ApiVersionResponse {
+  version: string;
+  git_sha: string;
+  built_at: string;
+}
+
+export interface ApiHealthResponse {
+  status: "ok" | "degraded" | string;
+  db: "connected" | "unreachable" | string;
+  redis: "connected" | "unreachable" | string;
+  timestamp: string;
+}
+
 export interface ContractEvent {
   id: string;
   /** The API has always returned this; the type was missing it. */

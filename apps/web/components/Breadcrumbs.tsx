@@ -17,6 +17,7 @@ const SECTION_LABELS: Record<string, string> = {
   contracts: "Contracts",
   events: "Events",
   playground: "Playground",
+  status: "Status",
   watchdog: "Watchdog",
   watchlist: "Watchlist",
 };

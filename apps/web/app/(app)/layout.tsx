@@ -94,8 +94,17 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
         <Breadcrumbs />
         <main>{children}</main>
-        <footer className="mt-12 border-t border-[var(--color-border)] pt-6 text-sm text-[var(--color-text-secondary)]">
-          Built for the Stellar developer community.
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] pt-6 text-sm text-[var(--color-text-secondary)]">
+          <div className="flex items-center gap-4">
+            <span>Built for the Stellar developer community.</span>
+            <span>·</span>
+            <Link
+              href="/status"
+              className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline"
+            >
+              Status
+            </Link>
+          </div>
           <LastUpdated />
         </footer>
       </div>

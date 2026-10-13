@@ -52,10 +52,13 @@ import type {
   RulePreview,
   RuleCatalogResponse,
   RuleLibraryResponse,
+  ApiVersionResponse,
+  ApiHealthResponse,
 } from "./types";
 import { recordLastUpdated, resourceFromUrl } from "./lastUpdated";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export class ApiError extends Error {
   constructor(
@@ -68,7 +71,10 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+export async function fetchJson<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -903,4 +909,14 @@ export function deleteContractNote(
       headers: { "X-User-ID": userId },
     }
   );
+}
+
+// ---- system status (issue #604) --------------------------------------------
+
+export function getApiVersion(): Promise<ApiVersionResponse> {
+  return fetchJson<ApiVersionResponse>(`${API_URL}/api/version`);
+}
+
+export function getApiHealth(): Promise<ApiHealthResponse> {
+  return fetchJson<ApiHealthResponse>(`${API_URL}/api/v1/health`);
 }
